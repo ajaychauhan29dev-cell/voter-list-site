@@ -35,3 +35,4 @@ body.loading button[type=submit]{opacity:.6;pointer-events:none}
 progress{display:block;width:100%;margin-top:8px}
 dialog label{margin-bottom:8px}
 button.danger{background:#c62828;border-color:#c62828;color:#fff}
+.empty{text-align:center;padding:40px}
