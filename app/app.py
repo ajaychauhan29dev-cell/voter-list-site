@@ -12,9 +12,30 @@ SESSIONS = {}  # token -> expiry
 JOBS = {}
 
 PG = os.environ.get('DATABASE_URL')
+class NeonHTTP:
+    # Neon's HTTPS SQL endpoint (for networks where port 5432 is blocked). Autocommit per statement.
+    def __init__(self, url):
+        import urllib.parse; self.url = url; self.host = urllib.parse.urlparse(url).hostname
+    def cursor(self): return self
+    def execute(self, sql, args=()):
+        import urllib.request, re
+        n = iter(range(1, 100000)); sql = re.sub(r'%s', lambda m: f'${next(n)}', sql)
+        req = urllib.request.Request(f'https://{self.host}/sql', data=json.dumps({'query': sql, 'params': [None if a is None else str(a) for a in args]}).encode(),
+            headers={'Neon-Connection-String': self.url, 'Content-Type': 'application/json'})
+        with urllib.request.urlopen(req, timeout=120) as r: res = json.load(r)
+        self.rows = [{k: (int(v) if v is not None and k in ('id','n','cid','page') else v) for k, v in row.items()} for row in res.get('rows', [])]
+    def executemany(self, sql, rows):
+        for r in rows: self.execute(sql, r)
+    def fetchone(self): return self.rows[0] if self.rows else None
+    def fetchall(self): return self.rows
+    def commit(self): pass
+    def rollback(self): pass
+    def close(self): pass
 class Conn:
     def __init__(self):
-        if PG:
+        if PG and os.environ.get('NEON_HTTP'):
+            self.c = NeonHTTP(PG)
+        elif PG:
             import psycopg
             from psycopg.rows import dict_row
             self.c = psycopg.connect(PG, row_factory=dict_row)
@@ -109,8 +130,11 @@ def voters(cid):
 
 def insert(cid, recs, conn=None):
     c = conn or connect()
-    c.executemany(f'insert into voter(cid,{",".join(FIELDS)}) values(?,{",".join("?"*len(FIELDS))})',
-                  [[cid]+[r.get(f,'') for f in FIELDS] for r in recs])
+    ph = '(' + ','.join('?' * (len(FIELDS) + 1)) + ')'
+    for i in range(0, len(recs), 300):
+        chunk = recs[i:i+300]
+        c.execute(f'insert into voter(cid,{",".join(FIELDS)}) values ' + ','.join([ph] * len(chunk)),
+                  [v for r in chunk for v in [cid] + [r.get(f, '') for f in FIELDS]])
     c.commit()
     if not conn: c.close()
 
