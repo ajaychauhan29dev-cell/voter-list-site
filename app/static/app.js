@@ -40,7 +40,10 @@ document.addEventListener('click',e=>{if(!e.target.closest('.combo'))$('#inst-po
 let t;$('#q').oninput=()=>{clearTimeout(t);t=setTimeout(()=>{page=1;load()},300)};
 $('#prev').onclick=()=>{if(page>1){page--;load()}};$('#next').onclick=()=>{if(page*SIZE<total){page++;load()}};
 let seq=0;async function load(){const my=++seq;const p=new URLSearchParams({q:$('#q').value,page,size:SIZE});if(inst)p.set('institution',inst);
- const d=await (await api(`/api/constituencies/${cid}/voters?${p}`)).json();if(my!==seq)return;total=d.total;const empty=!total&&!inst&&!$('#q').value.trim();$('#empty').classList.toggle('hidden',!empty);document.querySelector('.table-wrap').classList.toggle('hidden',empty);document.querySelector('.pager').classList.toggle('hidden',empty);
+ const d=await (await api(`/api/constituencies/${cid}/voters?${p}`)).json();if(my!==seq)return;total=d.total;const empty=!total&&!inst&&!$('#q').value.trim();$('#empty').classList.toggle('hidden',!empty);const kw=$('#q').value.trim();const nores=!total&&!empty;
+ $('#noresult').textContent=nores?('No entries found'+(kw?` for "${kw}"`:'')+(inst?(kw?' in':' for')+` "${inst}"`:'')):'';
+ $('#noresult').classList.toggle('hidden',!nores);
+ document.querySelector('.table-wrap').classList.toggle('hidden',empty||nores);document.querySelector('.pager').classList.toggle('hidden',empty||nores);
  $('#summary').textContent=`${d.total} voters found`;$('#pg').textContent=`Page ${page} of ${Math.max(1,Math.ceil(total/SIZE))}`;
  $('#rows').innerHTML=d.rows.map(r=>`<tr><td>${esc(r.serial)}</td><td>${esc(r.name)}</td><td>${esc(r.relative_name)}</td><td>${esc(r.relation)}</td><td class="addr">${esc(r.address)}</td><td>${esc(r.gender)}</td><td>${esc(r.dob)}</td><td>${esc(r.institution)}</td><td>${esc(r.state)}</td><td>${esc(r.pincode)}</td></tr>`).join('')}
 $('#empty-upload').onclick=()=>{$('#up-name').textContent=$('#const').selectedOptions[0].text.replace(/ \(\d+\)$/,'');$('#up-status').textContent='';$('#up-file').value='';$('#up-go').disabled=false;$('#up-dlg').showModal()};
