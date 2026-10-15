@@ -10,8 +10,13 @@ $('#login-form').onsubmit=async e=>{e.preventDefault();$('#login-err').textConte
  if(r.ok){setRole('admin');show(true)}else $('#login-err').textContent='Invalid ID or password'};
 $('#guest-btn').onclick=async()=>{const r=await api('/api/guest',{method:'POST'});if(r.ok){setRole('guest');show(true)}};
 $('#logout').onclick=async()=>{await api('/api/logout',{method:'POST'});location.reload()};
-async function loadConsts(keep){const cs=await (await api('/api/constituencies')).json();const s=$('#const');
- s.innerHTML='<option value="">Please choose District (ज़िला)</option>'+cs.map(c=>`<option value="${c.id}">${esc(c.name)} (${c.n})</option>`).join('');s.value=keep||cid}
+async function loadConsts(keep){const s=$('#const');const first=!s.dataset.loaded;$('#const-err').classList.add('hidden');
+ if(first){s.disabled=true;s.innerHTML='<option value="">Loading districts… (ज़िले लोड हो रहे हैं…)</option>';$('#const-spin').classList.remove('hidden')}
+ let cs;try{const r=await api('/api/constituencies');if(!r.ok)throw 0;cs=await r.json()}catch(e){$('#const-spin').classList.add('hidden');
+  if(first){s.innerHTML='<option value="">Could not load districts</option>';$('#const-err').classList.remove('hidden')}return}
+ $('#const-spin').classList.add('hidden');s.dataset.loaded=1;s.disabled=false;
+ s.innerHTML=(cs.length?'<option value="">Please choose District (ज़िला)</option>':'<option value="">No districts yet (कोई ज़िला नहीं)</option>')+cs.map(c=>`<option value="${c.id}">${esc(c.name)} (${c.n})</option>`).join('');s.value=keep||cid}
+$('#const-retry').onclick=()=>loadConsts();
 $('#const').onchange=async e=>{cid=e.target.value;inst='';page=1;$('#q').value='';$('#del-const').disabled=!cid;$('#list-area').classList.toggle('hidden',!cid);
  if(!cid)return;insts=await (await api(`/api/constituencies/${cid}/institutions`)).json();setInst('');};
 let newCid='';

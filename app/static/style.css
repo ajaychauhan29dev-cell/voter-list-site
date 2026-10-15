@@ -89,3 +89,5 @@ body.guest .admin-only{display:none!important}
 .guest-btn{width:100%}
 .small{font-size:.8rem;text-align:center;margin:.5em 0 0}
 .role-tag{font-size:.8rem;padding:.25em .7em;border-radius:999px;background:#fff3e0;color:#e65100;border:1px solid #ffcc80;align-self:center;white-space:nowrap}
+.const-row{display:flex;align-items:center;gap:.5em}
+#const-err{align-self:center}

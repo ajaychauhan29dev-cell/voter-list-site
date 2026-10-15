@@ -58,7 +58,8 @@
 </div>
   <div class="card controls">
     <label>District (ज़िला)
-      <select id="const"><option value="">Please choose District (ज़िला)</option></select></label>
+      <span class="const-row"><select id="const" disabled><option value="">Loading districts… (ज़िले लोड हो रहे हैं…)</option></select><span id="const-spin" class="spinner inline hidden"></span></span></label>
+    <p id="const-err" class="err hidden">ज़िले लोड नहीं हो सके · Could not load districts. <button type="button" id="const-retry" class="ghost">पुनः प्रयास · Retry</button></p>
     <button id="add-const" class="ghost admin-only">+ Add District (ज़िला)</button>
     <button id="del-const" class="danger admin-only" disabled>Delete District (ज़िला)</button>
   </div>
