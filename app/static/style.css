@@ -20,3 +20,14 @@ table{border-collapse:collapse;width:100%;font-size:.9rem}th,td{padding:8px 10px
 th{background:#fafbfc;position:sticky;top:0}td.addr{max-width:260px}
 .pager{display:flex;gap:12px;align-items:center;justify-content:center;margin:12px}
 dialog{border:none;border-radius:var(--radius);max-width:460px}menu{display:flex;gap:8px;justify-content:flex-end;padding:0}
+
+#loader{position:fixed;top:14px;left:50%;transform:translateX(-50%);display:none;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);border-radius:999px;padding:6px 14px;box-shadow:0 4px 14px rgba(0,0,0,.12);z-index:50;font-size:.9rem}
+body.loading #loader{display:flex}
+.spinner{width:18px;height:18px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.table-wrap{position:relative;min-height:120px}
+.table-spinner{position:absolute;inset:0;display:none;align-items:flex-start;justify-content:center;padding-top:40px;background:rgba(255,255,255,.55);z-index:2}
+.table-spinner .spinner{width:36px;height:36px;border-width:4px}
+body.loading .table-spinner{display:flex}
+body.loading table{opacity:.45;transition:opacity .15s}
+body.loading button[type=submit]{opacity:.6;pointer-events:none}
