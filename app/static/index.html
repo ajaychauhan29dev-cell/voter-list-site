@@ -1,0 +1,36 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Voter List</title><link rel="stylesheet" href="/static/style.css"></head><body>
+<section id="login-view" class="view card narrow">
+  <h1>Voter List Portal</h1>
+  <form id="login-form">
+    <label>ID<input id="lid" type="email" autocomplete="username" required></label>
+    <label>Password<input id="lpw" type="password" autocomplete="current-password" required></label>
+    <button type="submit">Log in</button><p id="login-err" class="err"></p>
+  </form>
+</section>
+<section id="app-view" class="view hidden">
+  <header class="topbar"><h1>Voter List Portal</h1><button id="logout" class="ghost">Log out</button></header>
+  <div class="card controls">
+    <label>Constituency
+      <select id="const"><option value="">Please choose constituency</option></select></label>
+    <button id="add-const" class="ghost">+ Add constituency</button>
+    <button id="upload-btn" class="ghost" disabled>Upload PDF list</button>
+  </div>
+  <div id="list-area" class="hidden">
+    <div class="card controls">
+      <label class="grow">Search<input id="q" placeholder="Name, institution, gender, address, pincode…"></label>
+      <div class="combo"><label>School / Institution</label>
+        <button id="inst-btn" class="combo-btn">All institutions ▾</button>
+        <div id="inst-pop" class="combo-pop hidden"><input id="inst-q" placeholder="Search institution…"><ul id="inst-list"></ul></div>
+      </div>
+    </div>
+    <p id="summary" class="muted"></p>
+    <div class="table-wrap"><table><thead><tr><th>S.No.</th><th>Name</th><th>Father/Husband</th><th>Relation</th><th>Address</th><th>Gender</th><th>DOB</th><th>Institution</th><th>State</th><th>Pincode</th></tr></thead><tbody id="rows"></tbody></table></div>
+    <div class="pager"><button id="prev" class="ghost">‹ Prev</button><span id="pg"></span><button id="next" class="ghost">Next ›</button></div>
+  </div>
+</section>
+<dialog id="up-dlg"><form method="dialog" id="up-form"><h2>Upload voter list PDF</h2>
+  <p class="muted">Entries are read from the PDF and added to <b id="up-name"></b>. Large scanned PDFs take a while.</p>
+  <input type="file" id="up-file" accept="application/pdf"><label class="row"><input type="checkbox" id="up-replace"> Replace existing entries</label>
+  <p id="up-status"></p><menu><button value="cancel" class="ghost">Close</button><button id="up-go" value="default">Upload</button></menu></form></dialog>
+<script src="/static/app.js"></script></body></html>

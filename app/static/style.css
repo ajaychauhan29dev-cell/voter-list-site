@@ -1,0 +1,22 @@
+:root{--bg:#f5f6f8;--card:#fff;--text:#1d2330;--muted:#6b7280;--accent:#2457d6;--border:#e3e6eb;--radius:10px;font-family:system-ui,"Noto Sans Devanagari",sans-serif}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);padding:20px}
+.hidden{display:none!important}.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:14px}
+.narrow{max-width:380px;margin:10vh auto}h1{font-size:1.3rem;margin:0 0 12px}
+label{display:flex;flex-direction:column;gap:4px;font-size:.85rem;color:var(--muted)}label.row{flex-direction:row;align-items:center}
+input,select{font:inherit;padding:8px 10px;border:1px solid var(--border);border-radius:8px;color:var(--text);background:#fff}
+#login-form{display:flex;flex-direction:column;gap:12px}
+button{font:inherit;padding:8px 14px;border-radius:8px;border:1px solid var(--accent);background:var(--accent);color:#fff;cursor:pointer}
+button.ghost{background:#fff;color:var(--accent)}button:disabled{opacity:.5;cursor:default}
+.err{color:#c62828;margin:0}.muted{color:var(--muted)}
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.controls{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}.grow{flex:1;min-width:220px}
+.combo{position:relative;display:flex;flex-direction:column;gap:4px;min-width:260px}.combo label{display:block}
+.combo-btn{background:#fff;color:var(--text);border-color:var(--border);text-align:left;max-width:360px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.combo-pop{position:absolute;top:100%;left:0;z-index:5;background:#fff;border:1px solid var(--border);border-radius:8px;width:380px;padding:8px;box-shadow:0 6px 20px rgba(0,0,0,.1)}
+.combo-pop input{width:100%}.combo-pop ul{list-style:none;margin:6px 0 0;padding:0;max-height:300px;overflow:auto}
+.combo-pop li{padding:6px 8px;border-radius:6px;cursor:pointer;font-size:.9rem}.combo-pop li:hover{background:var(--bg)}
+.table-wrap{overflow:auto;background:var(--card);border:1px solid var(--border);border-radius:var(--radius)}
+table{border-collapse:collapse;width:100%;font-size:.9rem}th,td{padding:8px 10px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+th{background:#fafbfc;position:sticky;top:0}td.addr{max-width:260px}
+.pager{display:flex;gap:12px;align-items:center;justify-content:center;margin:12px}
+dialog{border:none;border-radius:var(--radius);max-width:460px}menu{display:flex;gap:8px;justify-content:flex-end;padding:0}
