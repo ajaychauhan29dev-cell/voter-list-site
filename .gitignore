@@ -6,3 +6,4 @@ dbg-*.png
 x-*.png
 env.sh
 *.err
+app/voters.db
