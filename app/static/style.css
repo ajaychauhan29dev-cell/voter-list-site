@@ -62,3 +62,11 @@ html{scroll-behavior:smooth}
 .topbar{gap:10px;flex-wrap:wrap}.topbar-actions{display:flex;gap:8px}
 a.btn{display:inline-block;font:inherit;padding:8px 14px;border-radius:8px;border:1px solid var(--accent);background:var(--accent);color:#fff;text-decoration:none;line-height:normal}
 a.btn.ghost{background:#fff;color:var(--accent)}
+
+.date-badge{display:inline-block;margin-top:8px;background:#0b3d0b;color:#ffe066;font-weight:800;padding:3px 14px;border-radius:999px;font-size:1rem}
+.hero-quote{margin:0;padding:10px 24px 14px;font-weight:600;color:var(--maroon);font-size:1.05rem;border-top:1px dashed var(--border)}
+.hero-quote cite{font-style:normal;color:var(--green);white-space:nowrap}
+.info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;margin-top:18px}
+.info summary{font-weight:800;font-size:1.15rem;color:var(--maroon);cursor:pointer}
+.info ol{margin:10px 0 0;padding-left:22px;line-height:1.7}.info p{line-height:1.7;margin:10px 0 0}
+@media(max-width:640px){.hero-quote{font-size:.95rem;padding:10px 14px}.info-grid{grid-template-columns:1fr}}
