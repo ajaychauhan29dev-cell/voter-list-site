@@ -81,3 +81,11 @@ a.btn.ghost{background:#fff;color:var(--accent)}
 @media(max-width:640px){.combo{width:100%}.combo-btn{width:100%}.combo-pop{left:0;right:0;width:100%;max-width:100%}.controls>*{max-width:100%}}
 .card.narrow,.login-card{max-width:450px;margin-left:auto;margin-right:auto}
 .cal-icon{vertical-align:-3px;margin-right:2px}
+
+body.guest .admin-only{display:none!important}
+.login-sub{margin:.2em 0 .6em;font-size:1rem;color:#2e7d32}
+.or-sep{display:flex;align-items:center;gap:.6em;margin:.8em 0;color:#888;font-size:.85rem}
+.or-sep:before,.or-sep:after{content:"";flex:1;border-top:1px solid #ddd}
+.guest-btn{width:100%}
+.small{font-size:.8rem;text-align:center;margin:.5em 0 0}
+.role-tag{font-size:.8rem;padding:.25em .7em;border-radius:999px;background:#fff3e0;color:#e65100;border:1px solid #ffcc80;align-self:center;white-space:nowrap}

@@ -72,12 +72,18 @@ def init():
     c.commit(); c.close()
 
 def authed():
-    t = request.cookies.get('sid'); exp = SESSIONS.get(t)
-    return bool(t and exp and exp > time.time())
+    t = request.cookies.get('sid'); v = SESSIONS.get(t)
+    return bool(t and v and v[0] > time.time())
+def role():
+    v = SESSIONS.get(request.cookies.get('sid')); return v[1] if v else None
 @app.before_request
 def guard():
-    if request.path.startswith('/api/') and request.path != '/api/login' and not authed():
+    if request.path.startswith('/api/') and request.path not in ('/api/login', '/api/guest') and not authed():
         return jsonify(error='unauthorized'), 401
+    if request.path.startswith('/api/') and request.method not in ('GET', 'HEAD', 'OPTIONS') and request.path not in ('/api/login', '/api/guest', '/api/logout') and role() != 'admin':
+        return jsonify(error='forbidden: admin only'), 403
+    if request.path.startswith('/api/jobs/') and role() != 'admin':
+        return jsonify(error='forbidden: admin only'), 403
 
 @app.post('/api/login')
 def login():
@@ -85,16 +91,20 @@ def login():
     ok = hmac.compare_digest((d.get('id') or '').strip().lower(), USER) and check_password_hash(PW_HASH, d.get('password') or '')
     if not ok:
         time.sleep(1); return jsonify(error='Invalid ID or password'), 401
-    t = secrets.token_urlsafe(32); SESSIONS[t] = time.time() + 12*3600
-    r = make_response(jsonify(ok=True))
+    return start_session('admin')
+def start_session(rl):
+    t = secrets.token_urlsafe(32); SESSIONS[t] = (time.time() + 12*3600, rl)
+    r = make_response(jsonify(ok=True, role=rl))
     r.set_cookie('sid', t, httponly=True, samesite='Lax', secure=request.headers.get('X-Forwarded-Proto','http')=='https' or request.is_secure, max_age=12*3600)
     return r
+@app.post('/api/guest')
+def guest(): return start_session('guest')
 @app.post('/api/logout')
 def logout():
     SESSIONS.pop(request.cookies.get('sid'), None)
     r = make_response(jsonify(ok=True)); r.delete_cookie('sid'); return r
 @app.get('/api/me')
-def me(): return jsonify(user=USER)
+def me(): return jsonify(user=USER if role() == 'admin' else 'guest', role=role())
 
 @app.get('/api/constituencies')
 def consts():

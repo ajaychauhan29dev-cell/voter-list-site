@@ -22,15 +22,19 @@
 </div>
  <div class="card narrow login-card">
   <h2>मतदाता सूची पोर्टल · Voter List Portal</h2>
+  <h3 class="login-sub">एडमिन लॉगिन · Admin Login</h3>
   <form id="login-form">
     <label>ID<input id="lid" type="email" autocomplete="username" required></label>
     <label>Password<input id="lpw" type="password" autocomplete="current-password" required></label>
     <button type="submit">Log in</button><p id="login-err" class="err"></p>
   </form>
+  <div class="or-sep"><span>या · or</span></div>
+  <button type="button" id="guest-btn" class="ghost guest-btn">अतिथि के रूप में देखें · Continue as Guest</button>
+  <p class="muted small">अतिथि केवल सूची देख और खोज सकते हैं · Guests can only view and search the list</p>
  </div>
 </section>
 <section id="app-view" class="view hidden">
-  <header class="topbar"><h2 class="portal-title">मतदाता सूची पोर्टल · Voter List Portal</h2><div class="topbar-actions"><a href="#contact" class="btn ghost" id="contact-btn">Contact Us</a><button id="logout" class="ghost">Log out</button></div></header>
+  <header class="topbar"><h2 class="portal-title">मतदाता सूची पोर्टल · Voter List Portal</h2><div class="topbar-actions"><span id="role-tag" class="role-tag"></span><a href="#contact" class="btn ghost" id="contact-btn">Contact Us</a><button id="logout" class="ghost">Log out</button></div></header>
   <div class="hero">
   <div class="tiranga-bar"></div>
   <div class="hero-inner">
@@ -55,8 +59,8 @@
   <div class="card controls">
     <label>District (ज़िला)
       <select id="const"><option value="">Please choose District (ज़िला)</option></select></label>
-    <button id="add-const" class="ghost">+ Add District (ज़िला)</button>
-    <button id="del-const" class="danger" disabled>Delete District (ज़िला)</button>
+    <button id="add-const" class="ghost admin-only">+ Add District (ज़िला)</button>
+    <button id="del-const" class="danger admin-only" disabled>Delete District (ज़िला)</button>
   </div>
   <div id="list-area" class="hidden">
     <div class="card controls">
@@ -68,7 +72,7 @@
     </div>
     <p id="summary" class="muted"></p>
     <div id="noresult" class="card empty hidden"></div>
-    <div id="empty" class="card empty hidden"><p>No voters in this district yet.</p><button id="empty-upload">Upload PDF</button></div>
+    <div id="empty" class="card empty hidden"><p>No voters in this district yet.</p><button id="empty-upload" class="admin-only">Upload PDF</button></div>
     <div class="table-wrap"><div class="table-spinner"><div class="spinner"></div></div><table><thead><tr><th>S.No.</th><th>Name</th><th>Father/Husband</th><th>Relation</th><th>Address</th><th>Gender</th><th>DOB</th><th>Institution</th><th>State</th><th>Pincode</th></tr></thead><tbody id="rows"></tbody></table></div>
     <div class="pager"><button id="prev" class="ghost">‹ Prev</button><span id="pg"></span><button id="next" class="ghost">Next ›</button></div>
   </div>

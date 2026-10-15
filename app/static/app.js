@@ -3,10 +3,12 @@ let busy=0;const setBusy=d=>{busy=Math.max(0,busy+d);document.body.classList.tog
 const api=async(u,o={})=>{setBusy(1);try{const r=await fetch(u,{credentials:'same-origin',...o});if(r.status==401&&u!='/api/login'){show(false);throw 0}
  const t=await r.text();return{ok:r.ok,status:r.status,json:async()=>JSON.parse(t)}}finally{setBusy(-1)}};
 const esc=s=>(s??'').toString().replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let ROLE='';function setRole(r){ROLE=r||'';document.body.classList.toggle('guest',ROLE!=='admin');$('#role-tag').textContent=ROLE==='admin'?'एडमिन · Admin':'अतिथि · Guest'}
 function show(a){$('#login-view').classList.toggle('hidden',a);$('#app-view').classList.toggle('hidden',!a);if(a)loadConsts()}
 $('#login-form').onsubmit=async e=>{e.preventDefault();$('#login-err').textContent='';
  const r=await api('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:$('#lid').value,password:$('#lpw').value})});
- if(r.ok)show(true);else $('#login-err').textContent='Invalid ID or password'};
+ if(r.ok){setRole('admin');show(true)}else $('#login-err').textContent='Invalid ID or password'};
+$('#guest-btn').onclick=async()=>{const r=await api('/api/guest',{method:'POST'});if(r.ok){setRole('guest');show(true)}};
 $('#logout').onclick=async()=>{await api('/api/logout',{method:'POST'});location.reload()};
 async function loadConsts(keep){const cs=await (await api('/api/constituencies')).json();const s=$('#const');
  s.innerHTML='<option value="">Please choose District (ज़िला)</option>'+cs.map(c=>`<option value="${c.id}">${esc(c.name)} (${c.n})</option>`).join('');s.value=keep||cid}
@@ -52,5 +54,5 @@ $('#del-go').onclick=async()=>{$('#del-go').disabled=true;const r=await api(`/ap
  if(!r.ok){$('#del-err').textContent=(await r.json()).error||'Delete failed';$('#del-go').disabled=false;return}
  $('#del-dlg').close();cid='';$('#list-area').classList.add('hidden');$('#del-const').disabled=true;await loadConsts('')};
 $('#up-go').onclick=e=>{e.preventDefault();startUpload(cid,$('#up-file').files[0],$('#up-replace').checked,$('#up-status'),$('#up-go'),()=>openConst(cid))};
-api('/api/me').then(r=>show(r.ok)).catch(()=>{});
+api('/api/me').then(async r=>{if(r.ok)setRole((await r.json()).role);show(r.ok)}).catch(()=>{});
 $('#contact-btn').onclick=e=>{e.preventDefault();const f=$('#contact');f.scrollIntoView({behavior:'smooth',block:'end'});setTimeout(()=>{if(Math.abs(f.getBoundingClientRect().bottom-innerHeight)>4)f.scrollIntoView({block:'end'})},700)};
