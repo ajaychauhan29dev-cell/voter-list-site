@@ -34,4 +34,12 @@
   <input type="file" id="up-file" accept="application/pdf"><label class="row"><input type="checkbox" id="up-replace"> Replace existing entries</label>
   <p id="up-status"></p><menu><button value="cancel" class="ghost">Close</button><button id="up-go" value="default">Upload</button></menu></form></dialog>
 <div id="loader" role="status" aria-live="polite"><div class="spinner"></div><span>Loading…</span></div>
+<dialog id="add-dlg"><form id="add-form">
+  <div id="add-step1"><h2>Add constituency</h2><label>Constituency name<input id="add-name" required></label><p id="add-err" class="err"></p>
+    <menu><button type="button" class="ghost" id="add-cancel">Cancel</button><button type="submit">Next</button></menu></div>
+  <div id="add-step2" class="hidden"><h2>Upload voter list for <span id="add-cname"></span></h2>
+    <p class="muted">Pick the PDF voter list. Entries are read and added to this constituency. Large scanned PDFs take a while.</p>
+    <input type="file" id="add-file" accept="application/pdf"><p id="add-status"></p>
+    <menu><button type="button" class="ghost" id="add-skip">Skip for now</button><button type="button" id="add-go">Upload</button></menu></div>
+</form></dialog>
 <script src="/static/app.js"></script></body></html>

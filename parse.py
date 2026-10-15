@@ -61,7 +61,7 @@ def fix(r):
     m=re.search(r'(\d{1,2})\s*/\s*(\d{1,2})\s*/\s*(\d{4})',r['dob'])
     if m: r['dob']=f"{int(m[1]):02d}/{int(m[2]):02d}/{m[3]}"
     r['state']=r['state'].replace(' ','') and 'उत्तर प्रदेश' if 'उत्त' in r['state'] or 'प्रदे' in r['state'] else r['state']
-    m=re.search(r'\b(\d{6})\b',r['address']); r['pincode']=m[1] if m else ''
+    m=re.findall(r'(?<!\d)(\d{6})(?!\d)',r['address'].translate(str.maketrans('०१२३४५६७८९','0123456789'))); r['pincode']=m[-1] if m else ''
     return r
 def parse_pdf(pdf,first=1,last=None,dpi=200,out=None):
     d=tempfile.mkdtemp(); recs=[]
