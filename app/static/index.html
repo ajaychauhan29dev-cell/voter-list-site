@@ -1,15 +1,53 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Voter List</title><link rel="stylesheet" href="/static/style.css"></head><body>
-<section id="login-view" class="view card narrow">
-  <h1>Voter List Portal</h1>
+<title>Dr. Kuldeep Malik – Voter List Portal</title>
+<link rel="icon" href="/static/favicon.png"><link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Mukta:wght@400;600;800&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/static/style.css"></head><body>
+<section id="login-view" class="view">
+ <div class="hero hero-login">
+  <div class="tiranga-bar"></div>
+  <div class="hero-inner">
+    <img class="hero-photo" src="/static/portrait.webp" alt="डॉ० कुलदीप मलिक" width="160" height="160">
+    <div class="hero-text">
+      <div class="tagline-row"><span class="tag saffron">शिक्षक का सम्मान</span><span class="tag green">ऊँचा हिन्दुस्तान</span></div>
+      <h1 class="hero-name">डॉ० कुलदीप मलिक</h1>
+      <p class="hero-degrees">MCA, M.Tech., MA (Yogic Sc.), Ph.D</p>
+      <p class="hero-cand">प्रत्याशी : एमएलसी (शिक्षक)</p>
+      <p class="hero-const">मेरठ-सहारनपुर मण्डल शिक्षक निर्वाचन क्षेत्र</p>
+    </div>
+  </div>
+  
+</div>
+ <div class="card narrow login-card">
+  <h2>मतदाता सूची पोर्टल · Voter List Portal</h2>
   <form id="login-form">
     <label>ID<input id="lid" type="email" autocomplete="username" required></label>
     <label>Password<input id="lpw" type="password" autocomplete="current-password" required></label>
     <button type="submit">Log in</button><p id="login-err" class="err"></p>
   </form>
+ </div>
 </section>
 <section id="app-view" class="view hidden">
-  <header class="topbar"><h1>Voter List Portal</h1><button id="logout" class="ghost">Log out</button></header>
+  <header class="topbar"><h2 class="portal-title">मतदाता सूची पोर्टल · Voter List Portal</h2><button id="logout" class="ghost">Log out</button></header>
+  <div class="hero">
+  <div class="tiranga-bar"></div>
+  <div class="hero-inner">
+    <img class="hero-photo" src="/static/portrait.webp" alt="डॉ० कुलदीप मलिक" width="160" height="160">
+    <div class="hero-text">
+      <div class="tagline-row"><span class="tag saffron">शिक्षक का सम्मान</span><span class="tag green">ऊँचा हिन्दुस्तान</span></div>
+      <h1 class="hero-name">डॉ० कुलदीप मलिक</h1>
+      <p class="hero-degrees">MCA, M.Tech., MA (Yogic Sc.), Ph.D</p>
+      <p class="hero-cand">प्रत्याशी : एमएलसी (शिक्षक)</p>
+      <p class="hero-const">मेरठ-सहारनपुर मण्डल शिक्षक निर्वाचन क्षेत्र</p>
+    </div>
+  </div>
+  <ul class="roles">
+    <li><b>असिस्टेंट प्रोफेसर</b><span>आई. टी. एस इन्जीनियरिंग कॉलिज</span></li>
+    <li><b>प्रदेश संगठन मंत्री (तकनीकि शिक्षा)</b><span>राष्ट्रीय शैक्षिक महासंघ</span></li>
+    <li><b>राष्ट्रीय उपाध्यक्ष</b><span>जनसंख्या समाधान फाउण्डेशन</span></li>
+    <li><b>निदेशक</b><span>वेदार्णा फाउण्डेशन</span></li>
+  </ul>
+</div>
   <div class="card controls">
     <label>Constituency
       <select id="const"><option value="">Please choose constituency</option></select></label>
@@ -35,6 +73,9 @@
   <p class="muted">Entries are read from the PDF and added to <b id="up-name"></b>. Large scanned PDFs take a while.</p>
   <input type="file" id="up-file" accept="application/pdf"><label class="row"><input type="checkbox" id="up-replace"> Replace existing entries</label>
   <p id="up-status"></p><menu><button value="cancel" class="ghost">Close</button><button id="up-go" value="default">Upload</button></menu></form></dialog>
+<footer class="site-footer"><div class="tiranga-bar"></div><div class="footer-inner">
+  <span>📘 Facebook: Kuldeep Malik</span><span>▶️ YouTube: Vedaarna Foundation</span><span>💬 WhatsApp: <a href="https://wa.me/919871282232">+91-9871282232</a></span>
+  <span>पता: जे 4, बीटा 2, ग्रेटर नोएडा-201308</span></div></footer>
 <div id="loader" role="status" aria-live="polite"><div class="spinner"></div><span>Loading…</span></div>
 <dialog id="add-dlg"><form id="add-form">
   <div id="add-step1"><h2>Add constituency</h2><label>Constituency name<input id="add-name" required></label><p id="add-err" class="err"></p>
