@@ -70,3 +70,12 @@ a.btn.ghost{background:#fff;color:var(--accent)}
 .info summary{font-weight:800;font-size:1.15rem;color:var(--maroon);cursor:pointer}
 .info ol{margin:10px 0 0;padding-left:22px;line-height:1.7}.info p{line-height:1.7;margin:10px 0 0}
 @media(max-width:640px){.hero-quote{font-size:.95rem;padding:10px 14px}.info-grid{grid-template-columns:1fr}}
+/* overflow fixes */
+.combo{position:relative;min-width:0}
+.combo-pop{left:auto;right:0;width:min(420px,calc(100vw - 24px));max-width:min(420px,calc(100vw - 24px));box-sizing:border-box}
+.combo-pop li{white-space:normal;overflow-wrap:anywhere;word-break:break-word}
+.combo-btn{max-width:100%}
+.table-wrap{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+#app-view,#list-area,.card{min-width:0;max-width:100%}
+.footer-inner span,.footer-inner a{overflow-wrap:anywhere}
+@media(max-width:640px){.combo{width:100%}.combo-btn{width:100%}.combo-pop{left:0;right:0;width:100%;max-width:100%}.controls>*{max-width:100%}}
