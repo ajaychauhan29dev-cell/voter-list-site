@@ -39,8 +39,11 @@ async function startUpload(id,f,replace,statusEl,btn,done){if(!f){statusEl.textC
    :s.status=='finished'?`Done: ${s.added} entries added.`:`Error: ${s.error||s.status}`;
   if(s.status=='running')setTimeout(poll,3000);else{btn.disabled=false;done&&done()}};poll()}
 function setInst(v){inst=v;page=1;$('#inst-btn').textContent=(v||'All institutions')+' ▾';$('#inst-pop').classList.add('hidden');load()}
-function renderInsts(){const f=$('#inst-q').value.toLowerCase();const l=insts.filter(i=>i.institution.toLowerCase().includes(f)).slice(0,300);
- $('#inst-list').innerHTML='<li data-v="">All institutions</li>'+l.map(i=>`<li data-v="${esc(i.institution)}">${esc(i.institution)} (${i.n})</li>`).join('')}
+let instF=[],instN=0;const CHUNK=200;
+function moreInsts(){const l=instF.slice(instN,instN+CHUNK);instN+=l.length;$('#inst-list').insertAdjacentHTML('beforeend',l.map(i=>`<li data-v="${esc(i.institution)}">${esc(i.institution)} (${i.n})</li>`).join(''))}
+function renderInsts(){const f=$('#inst-q').value.toLowerCase();instF=insts.filter(i=>i.institution.toLowerCase().includes(f));instN=0;
+ $('#inst-list').innerHTML='<li data-v="">All institutions</li>';$('#inst-list').scrollTop=0;moreInsts()}
+$('#inst-list').addEventListener('scroll',e=>{const u=e.target;if(instN<instF.length&&u.scrollTop+u.clientHeight>u.scrollHeight-150)moreInsts()});
 $('#inst-btn').onclick=()=>{$('#inst-pop').classList.toggle('hidden');$('#inst-q').value='';renderInsts();$('#inst-q').focus()};
 $('#inst-q').oninput=renderInsts;$('#inst-list').onclick=e=>{if(e.target.dataset.v!==undefined)setInst(e.target.dataset.v)};
 document.addEventListener('click',e=>{if(!e.target.closest('.combo'))$('#inst-pop').classList.add('hidden')});
