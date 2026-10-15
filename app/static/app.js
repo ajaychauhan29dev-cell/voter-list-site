@@ -9,7 +9,7 @@ $('#login-form').onsubmit=async e=>{e.preventDefault();$('#login-err').textConte
  if(r.ok)show(true);else $('#login-err').textContent='Invalid ID or password'};
 $('#logout').onclick=async()=>{await api('/api/logout',{method:'POST'});location.reload()};
 async function loadConsts(keep){const cs=await (await api('/api/constituencies')).json();const s=$('#const');
- s.innerHTML='<option value="">Please choose constituency</option>'+cs.map(c=>`<option value="${c.id}">${esc(c.name)} (${c.n})</option>`).join('');s.value=keep||cid}
+ s.innerHTML='<option value="">Please choose District (ज़िला)</option>'+cs.map(c=>`<option value="${c.id}">${esc(c.name)} (${c.n})</option>`).join('');s.value=keep||cid}
 $('#const').onchange=async e=>{cid=e.target.value;inst='';page=1;$('#q').value='';$('#del-const').disabled=!cid;$('#list-area').classList.toggle('hidden',!cid);
  if(!cid)return;insts=await (await api(`/api/constituencies/${cid}/institutions`)).json();setInst('');};
 let newCid='';

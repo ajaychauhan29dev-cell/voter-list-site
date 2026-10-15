@@ -105,7 +105,7 @@ def add_const():
     name = ((request.get_json(force=True, silent=True) or {}).get('name') or '').strip()
     if not name: return jsonify(error='Name required'), 400
     if db().execute('select 1 from constituency where lower(name)=lower(?)', (name,)).fetchone():
-        return jsonify(error='Already exists'), 400
+        return jsonify(error='This district already exists'), 400
     db().execute('insert into constituency(name) values(?)', (name,)); db().commit()
     cid = db().execute('select id from constituency where name=?', (name,)).fetchone()['id']
     return jsonify(ok=True, id=cid)

@@ -53,10 +53,10 @@
   </ul>
 </div>
   <div class="card controls">
-    <label>Constituency
-      <select id="const"><option value="">Please choose constituency</option></select></label>
-    <button id="add-const" class="ghost">+ Add constituency</button>
-    <button id="del-const" class="danger" disabled>Delete constituency</button>
+    <label>District (ज़िला)
+      <select id="const"><option value="">Please choose District (ज़िला)</option></select></label>
+    <button id="add-const" class="ghost">+ Add District (ज़िला)</button>
+    <button id="del-const" class="danger" disabled>Delete District (ज़िला)</button>
   </div>
   <div id="list-area" class="hidden">
     <div class="card controls">
@@ -68,7 +68,7 @@
     </div>
     <p id="summary" class="muted"></p>
     <div id="noresult" class="card empty hidden"></div>
-    <div id="empty" class="card empty hidden"><p>No voters in this constituency yet.</p><button id="empty-upload">Upload PDF</button></div>
+    <div id="empty" class="card empty hidden"><p>No voters in this district yet.</p><button id="empty-upload">Upload PDF</button></div>
     <div class="table-wrap"><div class="table-spinner"><div class="spinner"></div></div><table><thead><tr><th>S.No.</th><th>Name</th><th>Father/Husband</th><th>Relation</th><th>Address</th><th>Gender</th><th>DOB</th><th>Institution</th><th>State</th><th>Pincode</th></tr></thead><tbody id="rows"></tbody></table></div>
     <div class="pager"><button id="prev" class="ghost">‹ Prev</button><span id="pg"></span><button id="next" class="ghost">Next ›</button></div>
   </div>
@@ -98,14 +98,14 @@
   <span class="social"><img src="/static/pin_icon.png" alt="Address" width="15" height="22">पता: जे 4, बीटा 2, ग्रेटर नोएडा-201308</span></div></footer>
 <div id="loader" role="status" aria-live="polite"><div class="spinner"></div><span>Loading…</span></div>
 <dialog id="add-dlg"><form id="add-form">
-  <div id="add-step1"><h2>Add constituency</h2><label>Constituency name<input id="add-name" required></label><p id="add-err" class="err"></p>
+  <div id="add-step1"><h2>Add District (ज़िला)</h2><label>District name<input id="add-name" required></label><p id="add-err" class="err"></p>
     <menu><button type="button" class="ghost" id="add-cancel">Cancel</button><button type="submit">Next</button></menu></div>
   <div id="add-step2" class="hidden"><h2>Upload voter list for <span id="add-cname"></span></h2>
-    <p class="muted">Pick the PDF voter list. Entries are read and added to this constituency. Large scanned PDFs take a while.</p>
+    <p class="muted">Pick the PDF voter list. Entries are read and added to this district. Large scanned PDFs take a while.</p>
     <input type="file" id="add-file" accept="application/pdf"><p id="add-status"></p>
     <menu><button type="button" class="ghost" id="add-skip">Skip for now</button><button type="button" id="add-go">Upload</button></menu></div>
 </form></dialog>
-<dialog id="del-dlg"><form method="dialog"><h2>Delete constituency</h2>
-  <p>Are you sure you want to delete <b id="del-name"></b>? All of its voter data will be permanently lost.</p><p id="del-err" class="err"></p>
+<dialog id="del-dlg"><form method="dialog"><h2>Delete District (ज़िला)</h2>
+  <p>Are you sure you want to delete <b id="del-name"></b> district? All of its voter data will be permanently lost.</p><p id="del-err" class="err"></p>
   <menu><button value="cancel" class="ghost">Cancel</button><button type="button" id="del-go" class="danger">Delete</button></menu></form></dialog>
 <script src="/static/app.js"></script></body></html>
