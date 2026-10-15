@@ -58,3 +58,7 @@ button.danger{background:#c62828;border-color:#c62828;color:#fff}
 @media(max-width:640px){body{padding:10px}.hero-inner{flex-direction:column;text-align:center;padding:16px}.tagline-row{justify-content:center}.hero-photo{width:120px;height:120px}.hero-name{font-size:1.8rem}.hero-cand{font-size:1.1rem}.combo-pop{width:90vw}}
 .footer-inner{align-items:center}.social{display:inline-flex;align-items:center;gap:6px;color:var(--text)!important;text-decoration:none;font-weight:600!important}.social:hover{text-decoration:underline}.social img{height:22px;width:auto}
 span.social{font-weight:400!important}span.social:hover{text-decoration:none}
+html{scroll-behavior:smooth}
+.topbar{gap:10px;flex-wrap:wrap}.topbar-actions{display:flex;gap:8px}
+a.btn{display:inline-block;font:inherit;padding:8px 14px;border-radius:8px;border:1px solid var(--accent);background:var(--accent);color:#fff;text-decoration:none;line-height:normal}
+a.btn.ghost{background:#fff;color:var(--accent)}
