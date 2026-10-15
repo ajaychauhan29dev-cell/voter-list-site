@@ -14,7 +14,7 @@
     <label>Constituency
       <select id="const"><option value="">Please choose constituency</option></select></label>
     <button id="add-const" class="ghost">+ Add constituency</button>
-    <button id="upload-btn" class="ghost" disabled>Upload PDF list</button>
+    <button id="del-const" class="danger" disabled>Delete constituency</button>
   </div>
   <div id="list-area" class="hidden">
     <div class="card controls">
@@ -42,4 +42,7 @@
     <input type="file" id="add-file" accept="application/pdf"><p id="add-status"></p>
     <menu><button type="button" class="ghost" id="add-skip">Skip for now</button><button type="button" id="add-go">Upload</button></menu></div>
 </form></dialog>
+<dialog id="del-dlg"><form method="dialog"><h2>Delete constituency</h2>
+  <p>Are you sure you want to delete <b id="del-name"></b>? All of its voter data will be permanently lost.</p><p id="del-err" class="err"></p>
+  <menu><button value="cancel" class="ghost">Cancel</button><button type="button" id="del-go" class="danger">Delete</button></menu></form></dialog>
 <script src="/static/app.js"></script></body></html>

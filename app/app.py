@@ -110,6 +110,14 @@ def add_const():
     cid = db().execute('select id from constituency where name=?', (name,)).fetchone()['id']
     return jsonify(ok=True, id=cid)
 
+@app.delete('/api/constituencies/<int:cid>')
+def del_const(cid):
+    if not db().execute('select 1 from constituency where id=?', (cid,)).fetchone():
+        return jsonify(error='Not found'), 404
+    db().execute('delete from voter where cid=?', (cid,))
+    db().execute('delete from constituency where id=?', (cid,)); db().commit()
+    return jsonify(ok=True)
+
 @app.get('/api/constituencies/<int:cid>/institutions')
 def insts(cid):
     rows = db().execute("select institution, count(*) n from voter where cid=? and institution<>'' group by institution order by institution", (cid,)).fetchall()
