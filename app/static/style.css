@@ -79,3 +79,4 @@ a.btn.ghost{background:#fff;color:var(--accent)}
 #app-view,#list-area,.card{min-width:0;max-width:100%}
 .footer-inner span,.footer-inner a{overflow-wrap:anywhere}
 @media(max-width:640px){.combo{width:100%}.combo-btn{width:100%}.combo-pop{left:0;right:0;width:100%;max-width:100%}.controls>*{max-width:100%}}
+.card.narrow,.login-card{max-width:450px;margin-left:auto;margin-right:auto}
