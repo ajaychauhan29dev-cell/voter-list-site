@@ -141,10 +141,10 @@ def voters(cid):
     if inst: where.append('institution=?'); args.append(inst)
     for term in q.split():
         cols = ['name','relative_name','relation','address','gender','dob','institution','serial','pincode','state']
-        where.append('(' + ' or '.join(f'{c} like ?' for c in cols) + ')'); args += [f'%{term}%']*len(cols)
+        where.append('(' + ' or '.join(f'lower({c}) like lower(?)' for c in cols) + ')'); args += [f'%{term}%']*len(cols)
     w = ' and '.join(where)
     total = db().execute(f'select count(*) n from voter where {w}', args).fetchone()['n']
-    rows = db().execute(f"select * from voter where {w} order by (case when coalesce(institution, '') = '' then 1 else 0 end), institution, cast(serial as integer) limit ? offset ?", args+[size,(page-1)*size]).fetchall()
+    rows = db().execute(f"select * from voter where {w} order by (case when coalesce(institution, '') = '' then 1 else 0 end), institution, cast(serial as integer), page, id limit ? offset ?", args+[size,(page-1)*size]).fetchall()
     return jsonify(total=total, page=page, size=size, rows=rows)
 
 def insert(cid, recs, conn=None):
