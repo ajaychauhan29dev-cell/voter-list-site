@@ -3,6 +3,17 @@ let busy=0;const setBusy=d=>{busy=Math.max(0,busy+d);document.body.classList.tog
 const api=async(u,o={})=>{setBusy(1);try{const r=await fetch(u,{credentials:'same-origin',...o});if(r.status==401&&u!='/api/login'){show(false);throw 0}
  const t=await r.text();return{ok:r.ok,status:r.status,json:async()=>JSON.parse(t)}}finally{setBusy(-1)}};
 const esc=s=>(s??'').toString().replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let LANG=localStorage.getItem('instLang')||'en',HI={};const dn=n=>LANG==='hi'&&HI[n]?HI[n]:n;
+const nrm=t=>(t||'').toLowerCase().replace(/([\u0900-\u097f])0/g,'$1 ').replace(/[^a-z0-9\u0900-\u097f]+/g,' ').trim().replace(/\s+/g,' ');
+const mrg=t=>t.replace(/\b(\w)\b ?(?=\w\b)/g,'$1');
+function lev(a,b){const m=a.length,n=b.length;let p=Array.from({length:n+1},(_,j)=>j);for(let i=1;i<=m;i++){const c=[i];for(let j=1;j<=n;j++)c[j]=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1));p=c}return 1-p[n]/Math.max(m,n,1)}
+function iscore(nq,v){const ne=nrm(v),ce=ne.replace(/ /g,''),cq=nq.replace(/ /g,'');if(!ce||!cq)return 0;if(ce===cq)return 100;if(ce.startsWith(cq)||ne.startsWith(nq))return 90;
+ if(cq.length>=3&&ne.split(' ').some(w=>w.startsWith(cq)))return 85;if(ce.includes(cq))return 80;if(cq.length<4)return 0;
+ const qw=mrg(nq).split(' '),ws=mrg(ne).split(' '),k=qw.length;let best=0;
+ for(let i=0;i+k<=ws.length;i++){let s=0,ok=true;for(let j=0;j<k;j++){const a=qw[j],b=ws[i+j];let x=a===b?1:a.length<=2?0:b.startsWith(a)?.95:a.length<4?0:lev(a,b);if(x<.75){ok=false;break}s+=x}if(ok)best=Math.max(best,s/k)}
+ return best?50+best*20:0}
+function setLang(l){LANG=l;localStorage.setItem('instLang',l);$('#lang-btn').textContent=l==='hi'?'संस्थान: हिंदी · EN':'Institutions: EN · हिंदी';
+ if(cid){$('#inst-btn').textContent=(inst?dn(inst):'All institutions')+' ▾';if(lastD)renderRows(lastD.rows);if(!$('#inst-pop').classList.contains('hidden'))renderInsts()}}
 let ROLE='';function setRole(r){ROLE=r||'';document.body.classList.toggle('guest',ROLE!=='admin');$('#role-tag').textContent=ROLE==='admin'?'एडमिन · Admin':'अतिथि · Guest'}
 function show(a){$('#login-view').classList.toggle('hidden',a);$('#app-view').classList.toggle('hidden',!a);if(a)loadConsts()}
 $('#login-form').onsubmit=async e=>{e.preventDefault();$('#login-err').textContent='';
@@ -18,7 +29,7 @@ async function loadConsts(keep){const s=$('#const');const first=!s.dataset.loade
  s.innerHTML=(cs.length?'<option value="">Please choose District (ज़िला)</option>':'<option value="">No districts yet (कोई ज़िला नहीं)</option>')+cs.map(c=>`<option value="${c.id}">${esc(c.name)} (${c.n})</option>`).join('');s.value=keep||cid}
 $('#const-retry').onclick=()=>loadConsts();
 $('#const').onchange=async e=>{PC.clear();cid=e.target.value;inst='';page=1;$('#q').value='';$('#del-const').disabled=!cid;$('#list-area').classList.toggle('hidden',!cid);
- if(!cid)return;insts=[];setInst('');const my=cid;const r=await (await api(`/api/constituencies/${cid}/institutions`)).json();if(my===cid)insts=r;};
+ if(!cid)return;insts=[];HI={};setInst('');const my=cid;const r=await (await api(`/api/constituencies/${cid}/institutions`)).json();if(my===cid){insts=r;r.forEach(i=>{if(i.hi)HI[i.institution]=i.hi});setLang(LANG)}};
 let newCid='';
 $('#add-const').onclick=()=>{newCid='';$('#add-name').value='';$('#add-err').textContent='';$('#add-status').textContent='';$('#add-file').value='';
  $('#add-step1').classList.remove('hidden');$('#add-step2').classList.add('hidden');$('#add-go').disabled=false;$('#add-dlg').showModal();$('#add-name').focus()};
@@ -38,10 +49,10 @@ async function startUpload(id,f,replace,statusEl,btn,done){if(!f){statusEl.textC
   statusEl.innerHTML=s.status=='running'?`<span class="spinner inline"></span> Reading PDF: page ${s.done}/${s.pages||'?'} (${pct}%), ${s.added} entries added<progress max="100" value="${pct}"></progress>`
    :s.status=='finished'?`Done: ${s.added} entries added.`:`Error: ${s.error||s.status}`;
   if(s.status=='running')setTimeout(poll,3000);else{btn.disabled=false;done&&done()}};poll()}
-function setInst(v){inst=v;page=1;$('#inst-btn').textContent=(v||'All institutions')+' ▾';$('#inst-pop').classList.add('hidden');load()}
+function setInst(v){inst=v;page=1;$('#inst-btn').textContent=(v?dn(v):'All institutions')+' ▾';$('#inst-pop').classList.add('hidden');load()}
 let instF=[],instN=0;const CHUNK=200;
-function moreInsts(){const l=instF.slice(instN,instN+CHUNK);instN+=l.length;$('#inst-list').insertAdjacentHTML('beforeend',l.map(i=>`<li data-v="${esc(i.institution)}">${esc(i.institution)} (${i.n})</li>`).join(''))}
-function renderInsts(){const f=$('#inst-q').value.toLowerCase();instF=insts.filter(i=>i.institution.toLowerCase().includes(f));instN=0;
+function moreInsts(){const l=instF.slice(instN,instN+CHUNK);instN+=l.length;$('#inst-list').insertAdjacentHTML('beforeend',l.map(i=>`<li data-v="${esc(i.institution)}">${esc(dn(i.institution))} (${i.n})</li>`).join(''))}
+function renderInsts(){const f=nrm($('#inst-q').value);instF=!f?insts:insts.map(i=>[i,Math.max(iscore(f,i.institution),iscore(f,i.hi||''))]).filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1]).map(x=>x[0]);instN=0;
  $('#inst-list').innerHTML='<li data-v="">All institutions</li>';$('#inst-list').scrollTop=0;moreInsts()}
 $('#inst-list').addEventListener('scroll',e=>{const u=e.target;if(instN<instF.length&&u.scrollTop+u.clientHeight>u.scrollHeight-150)moreInsts()});
 $('#inst-btn').onclick=()=>{$('#inst-pop').classList.toggle('hidden');$('#inst-q').value='';renderInsts();$('#inst-q').focus()};
@@ -58,11 +69,13 @@ function getPage(pg,q,bg){const k=pkey(pg,q);if(PC.has(k))return PC.get(k);const
 let seq=0;async function load(){const my=++seq;const q=$('#q').value;
  const d=await getPage(page,q);if(my!==seq)return;
  if(page*SIZE<d.total)getPage(page+1,q,1).catch(()=>{});if(page>1)getPage(page-1,q,1).catch(()=>{});total=d.total;const empty=!total&&!inst&&!$('#q').value.trim();$('#empty').classList.toggle('hidden',!empty);const kw=$('#q').value.trim();const nores=!total&&!empty;
- $('#noresult').textContent=nores?('No entries found'+(kw?` for "${kw}"`:'')+(inst?(kw?' in':' for')+` "${inst}"`:'')):'';
+ $('#noresult').textContent=nores?('No entries found'+(kw?` for "${kw}"`:'')+(inst?(kw?' in':' for')+` "${dn(inst)}"`:'')):'';
  $('#noresult').classList.toggle('hidden',!nores);
  document.querySelector('.table-wrap').classList.toggle('hidden',empty||nores);document.querySelector('.pager').classList.toggle('hidden',empty||nores);
  $('#summary').textContent=`${d.total} voters found`;$('#pg').textContent=`Page ${page} of ${Math.max(1,Math.ceil(total/SIZE))}`;
- $('#rows').innerHTML=d.rows.map(r=>`<tr><td>${esc(r.serial)}</td><td>${esc(r.name)}</td><td>${esc(r.relative_name)}</td><td>${esc(r.relation)}</td><td class="addr">${esc(r.address)}</td><td>${esc(r.gender)}</td><td>${esc(r.dob)}</td><td>${esc(r.institution)}</td><td>${esc(r.state)}</td><td>${esc(r.pincode)}</td></tr>`).join('')}
+lastD=d;renderRows(d.rows)}
+let lastD=null;function renderRows(rows){
+ $('#rows').innerHTML=rows.map(r=>`<tr><td>${esc(r.serial)}</td><td>${esc(r.name)}</td><td>${esc(r.relative_name)}</td><td>${esc(r.relation)}</td><td class="addr">${esc(r.address)}</td><td>${esc(r.gender)}</td><td>${esc(r.dob)}</td><td>${esc(dn(r.institution))}</td><td>${esc(r.state)}</td><td>${esc(r.pincode)}</td></tr>`).join('')}
 $('#empty-upload').onclick=()=>{$('#up-name').textContent=$('#const').selectedOptions[0].text.replace(/ \(\d+\)$/,'');$('#up-status').textContent='';$('#up-file').value='';$('#up-go').disabled=false;$('#up-dlg').showModal()};
 $('#del-const').onclick=()=>{if(!cid)return;$('#del-name').textContent=$('#const').selectedOptions[0].text.replace(/ \(\d+\)$/,'');$('#del-err').textContent='';$('#del-go').disabled=false;$('#del-dlg').showModal()};
 $('#del-go').onclick=async()=>{$('#del-go').disabled=true;const r=await api(`/api/constituencies/${cid}`,{method:'DELETE'});
@@ -70,4 +83,5 @@ $('#del-go').onclick=async()=>{$('#del-go').disabled=true;const r=await api(`/ap
  $('#del-dlg').close();cid='';$('#list-area').classList.add('hidden');$('#del-const').disabled=true;await loadConsts('')};
 $('#up-go').onclick=e=>{e.preventDefault();startUpload(cid,$('#up-file').files[0],$('#up-replace').checked,$('#up-status'),$('#up-go'),()=>openConst(cid))};
 api('/api/me').then(async r=>{if(r.ok)setRole((await r.json()).role);show(r.ok)}).catch(()=>{});
+$('#lang-btn').onclick=()=>setLang(LANG==='hi'?'en':'hi');setLang(LANG);
 $('#contact-btn').onclick=e=>{e.preventDefault();const f=$('#contact');f.scrollIntoView({behavior:'smooth',block:'end'});setTimeout(()=>{if(Math.abs(f.getBoundingClientRect().bottom-innerHeight)>4)f.scrollIntoView({block:'end'})},700)};

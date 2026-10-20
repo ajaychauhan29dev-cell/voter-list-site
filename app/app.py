@@ -23,6 +23,31 @@ if PG and not os.environ.get('NEON_HTTP'):
     from psycopg.rows import dict_row
     POOL = ConnectionPool(PG, min_size=1, max_size=8, kwargs={'row_factory': dict_row, 'autocommit': True}, max_idle=240, open=True)
     # autocommit + no per-checkout health check: one network round trip per query. Dead connections are retried below.
+import re, difflib
+def norm(t):
+    # lowercase; dots/punctuation/extra spaces removed; Hindi "0" abbreviation marks (पी0जी0) treated as dots
+    t = re.sub(r'(?<=[\u0900-\u097f])0', ' ', (t or '').lower())
+    return ' '.join(re.sub(r'[^a-z0-9\u0900-\u097f]+', ' ', t).split())
+def inst_score(nq, cq, v):
+    ne = norm(v); ce = ne.replace(' ', '')
+    if not ce: return 0
+    if ce == cq: return 100
+    if ce.startswith(cq) or ne.startswith(nq): return 90
+    if any(w.startswith(cq) for w in ne.split()) and len(cq) >= 3: return 85
+    if cq in ce: return 80
+    if len(cq) < 4: return 0
+    def merge(t): return re.sub(r'\b(\w)\b ?(?=\w\b)', r'\1', t)  # "i p college" -> "ip college"
+    qw = merge(nq).split(); ws = merge(ne).split(); k = len(qw); best = 0
+    def wsim(a, b):
+        if a == b: return 1
+        if len(a) <= 2: return 0          # short words / initials must match exactly
+        if b.startswith(a): return 0.95
+        if len(a) < 4: return 0
+        r = difflib.SequenceMatcher(None, a, b).ratio(); return r if r >= 0.75 else 0
+    for i in range(len(ws) - k + 1):
+        sims = [wsim(a, b) for a, b in zip(qw, ws[i:i+k])]
+        if all(sims): best = max(best, sum(sims) / k)
+    return 50 + best * 20 if best else 0
 CACHE = {}; CACHE_LOCK = threading.Lock(); CACHE_TTL = 60
 def cached(key, fn, ttl=CACHE_TTL):
     now = time.time(); v = CACHE.get(key)
@@ -39,7 +64,7 @@ class NeonHTTP:
     def cursor(self): return self
     def execute(self, sql, args=()):
         import urllib.request, re
-        n = iter(range(1, 100000)); sql = re.sub(r'%s', lambda m: f'${next(n)}', sql)
+        n = iter(range(1, 100000)); sql = re.sub(r'%s', lambda m: f'${next(n)}', sql).replace('%%', '%')
         req = urllib.request.Request(f'https://{self.host}/sql', data=json.dumps({'query': sql, 'params': [None if a is None else str(a) for a in args]}).encode(),
             headers={'Neon-Connection-String': self.url, 'Content-Type': 'application/json'})
         with urllib.request.urlopen(req, timeout=120) as r: res = json.load(r)
@@ -90,7 +115,8 @@ def init():
     for stmt in f'''create table if not exists constituency(id {pk}, name text unique);
     create table if not exists voter(id {pk}, cid integer, serial text, name text, relative_name text, relation text,
       address text, gender text, dob text, institution text, c9 text, c10 text, state text, pincode text, page integer);
-    create index if not exists vc on voter(cid); create index if not exists vi on voter(cid, institution)'''.split(';'):
+    create index if not exists vc on voter(cid); create index if not exists vi on voter(cid, institution);
+    create table if not exists institution_hi(name text primary key, hi text)'''.split(';'):
         c.execute(stmt)
     if PG:
         try:
@@ -163,8 +189,20 @@ def del_const(cid):
 
 @app.get('/api/constituencies/<int:cid>/institutions')
 def insts(cid):
-    rows = cached(('insts', cid), lambda: db().execute("select institution, count(*) n from voter where cid=? and institution<>'' group by institution order by institution", (cid,)).fetchall())
-    return jsonify(rows)
+    return jsonify(inst_list(cid))
+def inst_list(cid):
+    return cached(('insts', cid), lambda: db().execute("select v.institution, count(*) n, max(h.hi) hi from voter v left join institution_hi h on h.name=v.institution where v.cid=? and v.institution<>'' group by v.institution order by v.institution", (cid,)).fetchall())
+def fuzzy_insts(cid, q):
+    # Forgiving institution match (English or Hindi name): returns [(institution, score)], best first.
+    def f():
+        nq = norm(q); cq = nq.replace(' ', '')
+        if len(cq) < 2: return []
+        out = []
+        for i in inst_list(cid):
+            sc = max(inst_score(nq, cq, i['institution']), inst_score(nq, cq, i.get('hi') or ''))
+            if sc: out.append((i['institution'], sc))
+        return sorted(out, key=lambda x: -x[1])[:400]
+    return cached(('fz', cid, q), f)
 
 @app.get('/api/constituencies/<int:cid>/voters')
 def voters(cid):
@@ -175,8 +213,26 @@ def voters(cid):
     for term in q.split():
         # PG: "col ilike ?" (same matches as lower()/lower()) so the pg_trgm indexes can be used.
         where.append('(' + ' or '.join(f'{c} like ?' if PG else f'lower({c}) like lower(?)' for c in SEARCH_COLS) + ')'); args += [f'%{term}%']*len(SEARCH_COLS)
-    w = ' and '.join(where)
-    rows = db().execute(f"select *, count(*) over() as _total from voter where {w} order by (case when coalesce(institution, '') = '' then 1 else 0 end), institution, cast(serial as integer), page, id limit ? offset ?", args+[size,(page-1)*size]).fetchall()
+    lit = ' and '.join(where[1 + bool(inst):]) or '1=1'
+    base = ' and '.join(where[:1 + bool(inst)]); bargs = args[:1 + bool(inst)]; largs = args[1 + bool(inst):]
+    fz = fuzzy_insts(cid, q) if q and not inst else []
+    if fz:
+        strong = [n for n, sc in fz if sc >= 80]; allm = [n for n, _ in fz]
+        ph = lambda l: ','.join('?' * len(l))
+        w = f"{base} and (({lit}) or institution in ({ph(allm)}))"; args = bargs + largs + allm
+        # rank: exact/prefix/substring institution matches, then other literal matches, then typo-tolerant matches
+        rank = "(case " + (f"when institution in ({ph(strong)}) then 0 " if strong else '') + f"when ({lit}) then 1 else 2 end), "; rargs = strong + largs
+    else:
+        w = ' and '.join(where); rank = ''; rargs = []
+    rows = db().execute(f"select *, count(*) over() as _total from voter where {w} order by {rank}(case when coalesce(institution, '') = '' then 1 else 0 end), institution, cast(serial as integer), page, id limit ? offset ?", args+rargs+[size,(page-1)*size]).fetchall()
+    if not rows and page == 1 and q and PG and not fz:
+        # nothing matched literally: forgiving voter-name match (pg_trgm word similarity, uses the trigram index)
+        terms = [t for t in q.split() if len(t) >= 3]
+        if terms:
+            fw = ' and '.join(where[:1 + bool(inst)] + ['(? <%% name or ? <%% relative_name)'] * len(terms))
+            fa = bargs + [x for t in terms for x in (t, t)]
+            rows = db().execute(f"select *, count(*) over() as _total from voter where {fw} order by greatest({' + '.join(['word_similarity(?, name)'] * len(terms))}) desc, id limit ? offset ?", fa + terms + [size, 0]).fetchall()
+            for r in rows: r['_total'] = len(rows)
     if rows: total = int(rows[0]['_total'])
     else: total = db().execute(f'select count(*) n from voter where {w}', args).fetchone()['n'] if page > 1 else 0
     for r in rows: r.pop('_total', None)
@@ -202,11 +258,23 @@ def run_job(jid, cid, path):
             recs = parse_pdf(path, p, p)
             insert(cid, recs)
             JOBS[jid]['done'] = p; JOBS[jid]['added'] += len(recs); invalidate()
+        add_hindi_names(cid)
         JOBS[jid]['status'] = 'finished'; invalidate()
     except Exception as e:
         JOBS[jid].update(status='error', error=str(e)); invalidate()
     finally:
         os.remove(path)
+
+def add_hindi_names(cid):
+    # Give newly uploaded institutions a Hindi name (falls back to the English name).
+    try:
+        from hindi import to_hindi
+        c = connect()
+        new = [x['institution'] for x in c.execute("select distinct institution from voter v where cid=? and institution<>'' and not exists (select 1 from institution_hi h where h.name=v.institution)", (cid,)).fetchall()]
+        for n in new:
+            c.execute('insert into institution_hi(name, hi) values(?, ?) on conflict do nothing' if PG else 'insert or ignore into institution_hi(name, hi) values(?, ?)', (n, to_hindi(n)))
+        c.commit(); c.close()
+    except Exception as e: print('hindi names failed:', e, file=sys.stderr)
 
 @app.post('/api/constituencies/<int:cid>/upload')
 def upload(cid):
