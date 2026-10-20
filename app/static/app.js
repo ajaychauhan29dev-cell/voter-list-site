@@ -58,7 +58,7 @@ function closePop(apply){if($('#inst-pop').classList.contains('hidden'))return;$
 function updCount(){$('#inst-count').textContent=PEND&&PEND.size?`${PEND.size} चुने · selected`:''}
 let instF=[],instN=0;const CHUNK=200;
 function moreInsts(){const l=instF.slice(instN,instN+CHUNK);instN+=l.length;$('#inst-list').insertAdjacentHTML('beforeend',l.map(i=>`<li data-v="${esc(i.institution)}"><label class="ck"><input type="checkbox" ${PEND&&PEND.has(i.institution)?'checked':''}> <span>${esc(dn(i.institution))} (${i.n})</span></label></li>`).join(''))}
-function renderInsts(){const f=nrm($('#inst-q').value);instF=!f?insts:insts.map(i=>[i,Math.max(iscore(f,i.institution),iscore(f,i.hi||''))]).filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1]).map(x=>x[0]);instN=0;
+function renderInsts(){const f=nrm($('#inst-q').value);instF=!f?(PEND&&PEND.size?[...insts.filter(i=>PEND.has(i.institution)),...insts.filter(i=>!PEND.has(i.institution))]:insts):insts.map(i=>[i,Math.max(iscore(f,i.institution),iscore(f,i.hi||''))]).filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1]).map(x=>x[0]);instN=0;
  $('#inst-list').innerHTML='';$('#inst-list').scrollTop=0;moreInsts()}
 $('#inst-list').addEventListener('scroll',e=>{const u=e.target;if(instN<instF.length&&u.scrollTop+u.clientHeight>u.scrollHeight-150)moreInsts()});
 $('#inst-btn').onclick=()=>{if(!$('#inst-pop').classList.contains('hidden')){closePop(true);return}PEND=new Set(SEL);$('#inst-pop').classList.remove('hidden');$('#inst-q').value='';renderInsts();updCount();if(innerWidth>640)$('#inst-q').focus()};
