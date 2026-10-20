@@ -137,7 +137,7 @@ def role():
     v = SESSIONS.get(request.cookies.get('sid')); return v[1] if v else None
 @app.before_request
 def guard():
-    if request.path.startswith('/api/') and request.path not in ('/api/login', '/api/guest') and not authed():
+    if request.path.startswith('/api/') and request.path not in ('/api/login', '/api/guest', '/api/me') and not authed():
         return jsonify(error='unauthorized'), 401
     if request.path.startswith('/api/') and request.method not in ('GET', 'HEAD', 'OPTIONS') and request.path not in ('/api/login', '/api/guest', '/api/logout', '/api/geo') and role() != 'admin':
         return jsonify(error='forbidden: admin only'), 403
@@ -163,7 +163,9 @@ def logout():
     SESSIONS.pop(request.cookies.get('sid'), None)
     r = make_response(jsonify(ok=True)); r.delete_cookie('sid'); return r
 @app.get('/api/me')
-def me(): return jsonify(user=USER if role() == 'admin' else 'guest', role=role())
+def me():
+    if not authed(): return jsonify(user=None, role=None)  # 200 so first visits don't log a console error
+    return jsonify(user=USER if role() == 'admin' else 'guest', role=role())
 
 @app.get('/api/constituencies')
 def consts():
@@ -366,7 +368,9 @@ def ga_js():
 @app.get('/')
 def index(): return send_from_directory(os.path.join(os.path.dirname(__file__), 'static'), 'index.html')
 @app.get('/static/<path:p>')
-def st(p): return send_from_directory(os.path.join(os.path.dirname(__file__), 'static'), p)
+def st(p):
+    # versioned assets (?v=) are immutable for 30 days; others 1 day
+    return send_from_directory(os.path.join(os.path.dirname(__file__), 'static'), p, max_age=30*86400 if request.args.get('v') else 86400)
 
 init()
 if __name__ == '__main__':

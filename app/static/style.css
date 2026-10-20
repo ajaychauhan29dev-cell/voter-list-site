@@ -114,3 +114,46 @@ body.guest .admin-only{display:none!important}
 .inst-foot{display:flex;justify-content:flex-end;padding-top:6px;border-top:1px solid var(--border);margin-top:4px}.inst-foot button{padding:5px 14px}
 .inst-chips{margin-top:6px;max-width:520px}
 #inst-list input[type=checkbox]{width:auto;flex:none}
+/* ---- notices: stacked in one container, safe-area aware ---- */
+.notices{position:fixed;left:0;right:0;bottom:0;z-index:50;display:flex;flex-direction:column;gap:8px;padding:0 12px calc(12px + env(safe-area-inset-bottom));pointer-events:none}
+.notices .ga-notice{position:static;pointer-events:auto;margin:0 auto;width:100%}
+.lbl{display:block}
+/* ---- tablet & phone: tap targets and 16px inputs (no iOS zoom) ---- */
+@media(max-width:900px){
+ input,select,textarea{font-size:16px}
+ button,.btn,select,input:not([type=checkbox]):not([type=radio]),.combo-btn{min-height:44px}
+ .info summary{min-height:44px;display:flex;align-items:center}
+ .social{min-height:44px}
+ html,body{overflow-x:hidden}
+}
+/* ---- phones ---- */
+@media(max-width:640px){
+ body{padding-left:max(10px,env(safe-area-inset-left));padding-right:max(10px,env(safe-area-inset-right))}
+ .topbar-actions button,.topbar-actions .btn{min-height:44px}
+ /* compact sticky search/filter bar */
+ #list-area>.card.controls{position:sticky;top:0;z-index:20;padding:8px 10px;margin:0 -2px 10px;gap:6px;box-shadow:0 4px 10px rgba(0,0,0,.08)}
+ #list-area>.card.controls .lbl,#list-area .combo>label{display:none}
+ .q-row{flex-wrap:nowrap}.q-row input{flex:1 1 auto}#tr-btn{width:auto;flex:none;padding:6px 10px}.tr-long{display:none}
+ .tr-chips .chip{min-height:36px;padding:4px 14px}
+ /* voter table -> stacked cards */
+ .table-wrap{overflow:visible;border:none;background:none}
+ .table-wrap table,.table-wrap tbody,.table-wrap tr,.table-wrap td{display:block;width:100%}
+ .table-wrap thead{display:none}
+ .table-wrap tr{background:#fff;border:1px solid var(--border);border-left:4px solid var(--saffron);border-radius:10px;padding:8px 12px;margin-bottom:10px}
+ .table-wrap td{display:grid;grid-template-columns:42% 1fr;gap:8px;border:none;padding:3px 0;font-size:.95rem;white-space:normal;overflow-wrap:anywhere;text-align:left}
+ .table-wrap td::before{content:attr(data-l);color:var(--muted);font-size:.78rem;line-height:1.5}
+ .table-wrap td.c-name{font-weight:700;font-size:1.05rem;color:var(--navy)}
+ .table-wrap td:empty{display:none}.table-wrap td.addr{max-width:none}
+ /* sticky pager */
+ .pager{position:sticky;bottom:0;z-index:15;background:var(--bg);padding:8px 0 calc(8px + env(safe-area-inset-bottom));margin:0;display:flex;justify-content:space-between;align-items:center;box-shadow:0 -4px 10px rgba(0,0,0,.06)}
+ .pager button{min-width:96px}
+ /* institution dropdown -> full-screen sheet */
+ .combo-pop:not(.hidden){position:fixed;inset:0;z-index:70;width:100%!important;max-width:100%!important;border-radius:0;border:none;display:flex;flex-direction:column;padding:12px 12px calc(12px + env(safe-area-inset-bottom))}
+ .combo-pop:not(.hidden)::before{content:"संस्थान चुनें · Choose institutions";font-weight:700;color:var(--accent);padding:4px 2px 8px}
+ .combo-pop ul{flex:1;max-height:none!important}
+ .combo-pop li{padding:0}#inst-list label.ck{min-height:44px;align-items:center;padding:4px 6px}
+ .inst-tools button{min-height:40px}
+ .inst-foot button{width:100%;min-height:48px}
+ .ga-notice{font-size:.82rem}.ga-actions{width:100%}.ga-actions button{flex:1}
+ dialog{width:calc(100vw - 20px);max-width:calc(100vw - 20px)}
+}

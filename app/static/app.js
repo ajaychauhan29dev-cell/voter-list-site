@@ -88,14 +88,14 @@ let seq=0;async function load(){const my=++seq;const q=$('#q').value;
  $('#summary').textContent=`${d.total} voters found`;$('#pg').textContent=`Page ${page} of ${Math.max(1,Math.ceil(total/SIZE))}`;
 lastD=d;renderRows(d.rows)}
 let lastD=null;function renderRows(rows){
- $('#rows').innerHTML=rows.map(r=>`<tr><td>${esc(r.serial)}</td><td>${esc(r.name)}</td><td>${esc(r.relative_name)}</td><td>${esc(r.relation)}</td><td class="addr">${esc(r.address)}</td><td>${esc(r.gender)}</td><td>${esc(r.dob)}</td><td>${esc(dn(r.institution))}</td><td>${esc(r.state)}</td><td>${esc(r.pincode)}</td></tr>`).join('')}
+ $('#rows').innerHTML=rows.map(r=>`<tr><td data-l="क्र. · S.No.">${esc(r.serial)}</td><td data-l="नाम · Name" class="c-name">${esc(r.name)}</td><td data-l="पिता/पति · Father/Husband">${esc(r.relative_name)}</td><td data-l="संबंध · Relation">${esc(r.relation)}</td><td data-l="पता · Address" class="addr">${esc(r.address)}</td><td data-l="लिंग · Gender">${esc(r.gender)}</td><td data-l="जन्म तिथि · DOB">${esc(r.dob)}</td><td data-l="संस्थान · Institution">${esc(dn(r.institution))}</td><td data-l="राज्य · State">${esc(r.state)}</td><td data-l="पिनकोड · Pincode">${esc(r.pincode)}</td></tr>`).join('')}
 $('#empty-upload').onclick=()=>{$('#up-name').textContent=$('#const').selectedOptions[0].text.replace(/ \(\d+\)$/,'');$('#up-status').textContent='';$('#up-file').value='';$('#up-go').disabled=false;$('#up-dlg').showModal()};
 $('#del-const').onclick=()=>{if(!cid)return;$('#del-name').textContent=$('#const').selectedOptions[0].text.replace(/ \(\d+\)$/,'');$('#del-err').textContent='';$('#del-go').disabled=false;$('#del-dlg').showModal()};
 $('#del-go').onclick=async()=>{$('#del-go').disabled=true;const r=await api(`/api/constituencies/${cid}`,{method:'DELETE'});
  if(!r.ok){$('#del-err').textContent=(await r.json()).error||'Delete failed';$('#del-go').disabled=false;return}
  $('#del-dlg').close();cid='';$('#list-area').classList.add('hidden');$('#del-const').disabled=true;await loadConsts('')};
 $('#up-go').onclick=e=>{e.preventDefault();startUpload(cid,$('#up-file').files[0],$('#up-replace').checked,$('#up-status'),$('#up-go'),()=>openConst(cid))};
-api('/api/me').then(async r=>{if(r.ok)setRole((await r.json()).role);show(r.ok)}).catch(()=>{});
+api('/api/me').then(async r=>{const m=r.ok?await r.json():{};if(m.role)setRole(m.role);show(!!m.role)}).catch(()=>{});
 $('#contact-btn').onclick=e=>{e.preventDefault();const f=$('#contact');f.scrollIntoView({behavior:'smooth',block:'end'});setTimeout(()=>{if(Math.abs(f.getBoundingClientRect().bottom-innerHeight)>4)f.scrollIntoView({block:'end'})},700)};
 
 (()=>{const b=$('#ga-notice');if(!b)return;let v='';try{v=localStorage.getItem('ga_consent')||''}catch(e){}if(!v)b.classList.remove('hidden');
@@ -118,3 +118,8 @@ $('#tr-btn').onclick=async()=>{const v=$('#q').value.trim();const c=$('#tr-chips
  if(!vs.length){c.innerHTML='<span class="tr-msg">अभी उपलब्ध नहीं · Not available right now</span>';return}
  T('translit',vs.length);const pickV=k=>{$('#q').value=vs[k];ALT=vs.filter((_,i)=>i!==k);[...c.children].forEach((b,i)=>b.classList.toggle('on',i===k));clearTimeout(t);page=1;load()};
  c.innerHTML=vs.map((x,i)=>`<button type="button" class="chip">${esc(x)}</button>`).join('');[...c.children].forEach((b,i)=>b.onclick=()=>pickV(i));pickV(0)};
+
+// Notices stack in one bottom container; keep page content clear of them.
+(()=>{const n=$('#notices');if(!n||!window.ResizeObserver)return;const f=()=>{document.body.style.paddingBottom=n.offsetHeight?(n.offsetHeight+16)+'px':''};new ResizeObserver(f).observe(n);new MutationObserver(f).observe(n,{subtree:true,attributes:true,attributeFilter:['class']})})();
+// Analytics is non-critical: load it after the page has loaded and the browser is idle.
+addEventListener('load',()=>{const go=()=>{const s=document.createElement('script');s.src='/ga.js';s.async=true;document.head.appendChild(s)};(window.requestIdleCallback||(f=>setTimeout(f,1500)))(go,{timeout:3000})});
