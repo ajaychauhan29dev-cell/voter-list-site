@@ -18,7 +18,7 @@ async function loadConsts(keep){const s=$('#const');const first=!s.dataset.loade
  s.innerHTML=(cs.length?'<option value="">Please choose District (ज़िला)</option>':'<option value="">No districts yet (कोई ज़िला नहीं)</option>')+cs.map(c=>`<option value="${c.id}">${esc(c.name)} (${c.n})</option>`).join('');s.value=keep||cid}
 $('#const-retry').onclick=()=>loadConsts();
 $('#const').onchange=async e=>{PC.clear();cid=e.target.value;inst='';page=1;$('#q').value='';$('#del-const').disabled=!cid;$('#list-area').classList.toggle('hidden',!cid);
- if(!cid)return;insts=await (await api(`/api/constituencies/${cid}/institutions`)).json();setInst('');};
+ if(!cid)return;insts=[];setInst('');const my=cid;const r=await (await api(`/api/constituencies/${cid}/institutions`)).json();if(my===cid)insts=r;};
 let newCid='';
 $('#add-const').onclick=()=>{newCid='';$('#add-name').value='';$('#add-err').textContent='';$('#add-status').textContent='';$('#add-file').value='';
  $('#add-step1').classList.remove('hidden');$('#add-step2').classList.add('hidden');$('#add-go').disabled=false;$('#add-dlg').showModal();$('#add-name').focus()};
