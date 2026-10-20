@@ -1,5 +1,5 @@
 const T=(...a)=>{try{window.track(...a)}catch(e){}};
-const $=s=>document.querySelector(s);let cid='',inst='',page=1,insts=[],total=0;const SIZE=50;
+const $=s=>document.querySelector(s);let cid='',inst='',SEL=[],PEND=null,page=1,insts=[],total=0;const SIZE=50;
 let busy=0;const setBusy=d=>{busy=Math.max(0,busy+d);document.body.classList.toggle('loading',busy>0)};
 const api=async(u,o={})=>{setBusy(1);try{const r=await fetch(u,{credentials:'same-origin',...o});if(r.status==401&&u!='/api/login'){show(false);throw 0}
  const t=await r.text();return{ok:r.ok,status:r.status,json:async()=>JSON.parse(t)}}finally{setBusy(-1)}};
@@ -28,7 +28,7 @@ async function loadConsts(keep){const s=$('#const');const first=!s.dataset.loade
  $('#const-spin').classList.add('hidden');s.dataset.loaded=1;s.disabled=false;
  s.innerHTML=(cs.length?'<option value="">Please choose District (ज़िला)</option>':'<option value="">No districts yet (कोई ज़िला नहीं)</option>')+cs.map(c=>`<option value="${c.id}">${esc(c.name)} (${c.n})</option>`).join('');s.value=keep||cid}
 $('#const-retry').onclick=()=>loadConsts();
-$('#const').onchange=async e=>{PC.clear();if(e.target.value&&e.target.value!==cid)T('district',dname(e.target.value),e.target.value);cid=e.target.value;inst='';page=1;$('#q').value='';$('#del-const').disabled=!cid;$('#list-area').classList.toggle('hidden',!cid);
+$('#const').onchange=async e=>{PC.clear();if(e.target.value&&e.target.value!==cid)T('district',dname(e.target.value),e.target.value);cid=e.target.value;inst='';SEL=[];PEND=null;$('#inst-pop').classList.add('hidden');renderSel();page=1;$('#q').value='';$('#del-const').disabled=!cid;$('#list-area').classList.toggle('hidden',!cid);
  if(!cid)return;insts=[];HI={};setInst('');const my=cid;const r=await (await api(`/api/constituencies/${cid}/institutions`)).json();if(my===cid){insts=r;r.forEach(i=>{if(i.hi)HI[i.institution]=i.hi})}};
 let newCid='';
 $('#add-const').onclick=()=>{newCid='';$('#add-name').value='';$('#add-err').textContent='';$('#add-status').textContent='';$('#add-file').value='';
@@ -49,30 +49,40 @@ async function startUpload(id,f,replace,statusEl,btn,done){if(!f){statusEl.textC
   statusEl.innerHTML=s.status=='running'?`<span class="spinner inline"></span> Reading PDF: page ${s.done}/${s.pages||'?'} (${pct}%), ${s.added} entries added<progress max="100" value="${pct}"></progress>`
    :s.status=='finished'?`Done: ${s.added} entries added.`:`Error: ${s.error||s.status}`;
   if(s.status=='running')setTimeout(poll,3000);else{T('upload',s.status=='finished'?'finished':'error',f.size,dname(id));btn.disabled=false;done&&done()}};poll()}
-let instEv=false;function setInst(v){if(v||inst)instEv=true;inst=v;page=1;$('#inst-btn').textContent=(v?dn(v):'All institutions')+' ▾';$('#inst-pop').classList.add('hidden');load()}
+let instEv=false;
+const instLabel=()=>SEL.length===1?dn(SEL[0]):SEL.length?`${SEL.length} institutions (संस्थान)`:'All institutions';
+function renderSel(){$('#inst-btn').textContent=instLabel()+' ▾';$('#inst-chips').innerHTML=SEL.length>1?SEL.map((v,i)=>`<button type="button" class="chip" data-i="${i}" title="Remove">${esc(dn(v))} ✕</button>`).join(''):''}
+function setSel(arr){const a=[...new Set(arr)];const key=a.join('\u0001');if(key===inst&&a.length===SEL.length){renderSel();return}instEv=!!(a.length||SEL.length);SEL=a;inst=key;page=1;renderSel();load()}
+function setInst(v){PEND=null;$('#inst-pop').classList.add('hidden');SEL=v?[v]:[];inst=SEL.join('\u0001');page=1;renderSel();load()}
+function closePop(apply){if($('#inst-pop').classList.contains('hidden'))return;$('#inst-pop').classList.add('hidden');const p=PEND;PEND=null;if(apply&&p)setSel([...p])}
+function updCount(){$('#inst-count').textContent=PEND&&PEND.size?`${PEND.size} चुने · selected`:''}
 let instF=[],instN=0;const CHUNK=200;
-function moreInsts(){const l=instF.slice(instN,instN+CHUNK);instN+=l.length;$('#inst-list').insertAdjacentHTML('beforeend',l.map(i=>`<li data-v="${esc(i.institution)}">${esc(dn(i.institution))} (${i.n})</li>`).join(''))}
+function moreInsts(){const l=instF.slice(instN,instN+CHUNK);instN+=l.length;$('#inst-list').insertAdjacentHTML('beforeend',l.map(i=>`<li data-v="${esc(i.institution)}"><label class="ck"><input type="checkbox" ${PEND&&PEND.has(i.institution)?'checked':''}> <span>${esc(dn(i.institution))} (${i.n})</span></label></li>`).join(''))}
 function renderInsts(){const f=nrm($('#inst-q').value);instF=!f?insts:insts.map(i=>[i,Math.max(iscore(f,i.institution),iscore(f,i.hi||''))]).filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1]).map(x=>x[0]);instN=0;
- $('#inst-list').innerHTML='<li data-v="">All institutions</li>';$('#inst-list').scrollTop=0;moreInsts()}
+ $('#inst-list').innerHTML='';$('#inst-list').scrollTop=0;moreInsts()}
 $('#inst-list').addEventListener('scroll',e=>{const u=e.target;if(instN<instF.length&&u.scrollTop+u.clientHeight>u.scrollHeight-150)moreInsts()});
-$('#inst-btn').onclick=()=>{$('#inst-pop').classList.toggle('hidden');$('#inst-q').value='';renderInsts();$('#inst-q').focus()};
-$('#inst-q').oninput=renderInsts;$('#inst-list').onclick=e=>{if(e.target.dataset.v!==undefined)setInst(e.target.dataset.v)};
-document.addEventListener('click',e=>{if(!e.target.closest('.combo'))$('#inst-pop').classList.add('hidden')});
+$('#inst-btn').onclick=()=>{if(!$('#inst-pop').classList.contains('hidden')){closePop(true);return}PEND=new Set(SEL);$('#inst-pop').classList.remove('hidden');$('#inst-q').value='';renderInsts();updCount();if(innerWidth>640)$('#inst-q').focus()};
+$('#inst-q').oninput=renderInsts;$('#inst-list').onchange=e=>{const li=e.target.closest('li');if(!li||!PEND)return;e.target.checked?PEND.add(li.dataset.v):PEND.delete(li.dataset.v);updCount()};
+$('#inst-all').onclick=()=>{if(!PEND)return;instF.slice(0,500).forEach(i=>PEND.add(i.institution));$('#inst-list').querySelectorAll('input').forEach(c=>c.checked=true);updCount()};
+$('#inst-clear').onclick=()=>{if(!PEND)return;PEND.clear();$('#inst-list').querySelectorAll('input').forEach(c=>c.checked=false);updCount()};
+$('#inst-apply').onclick=()=>closePop(true);
+$('#inst-chips').onclick=e=>{const i=e.target.dataset.i;if(i!==undefined)setSel(SEL.filter((_,k)=>k!=i))};
+document.addEventListener('click',e=>{if(!e.target.closest('.combo'))closePop(true)});
 let t;$('#q').oninput=()=>{ALT=[];$('#tr-chips').innerHTML='';clearTimeout(t);t=setTimeout(()=>{page=1;load()},300)};
 $('#prev').onclick=()=>{if(page>1){page--;T('page',page,'prev',dname(cid));load()}};$('#next').onclick=()=>{if(page*SIZE<total){page++;T('page',page,'next',dname(cid));load()}};
 // Page cache + background prefetch so Next/Prev are instant. Cleared whenever the district changes (incl. after upload/delete).
 let PC=new Map(),ALT=[];const pkey=(pg,q)=>`${cid}|${inst}|${q}|${ALT.join(',')}|${pg}`;
-function getPage(pg,q,bg){const k=pkey(pg,q);if(PC.has(k))return PC.get(k);const p=new URLSearchParams({q,page:pg,size:SIZE});if(inst)p.set('institution',inst);ALT.forEach(a=>p.append('alt',a));
+function getPage(pg,q,bg){const k=pkey(pg,q);if(PC.has(k))return PC.get(k);const p=new URLSearchParams({q,page:pg,size:SIZE});SEL.forEach(v=>p.append('institution',v));ALT.forEach(a=>p.append('alt',a));
  const u=`/api/constituencies/${cid}/voters?${p}`;
  const pr=(bg?fetch(u,{credentials:'same-origin'}).then(r=>{if(!r.ok)throw 0;return r.json()}):api(u).then(r=>{if(!r.ok)throw 0;return r.json()}));
  PC.set(k,pr);pr.catch(()=>PC.delete(k));if(PC.size>200)PC.delete(PC.keys().next().value);return pr}
 let seq=0;async function load(){const my=++seq;const q=$('#q').value;
  let d;try{d=await getPage(page,q)}catch(e){if(e!==0)T('error','api_voters',String(e&&e.message||e));return}if(my!==seq)return;
- if(instEv){instEv=false;T('filter',inst,dname(cid),d.total,cid)}
+ if(instEv){instEv=false;T('filter',SEL,dname(cid),d.total,cid)}
  if(q.trim()&&page===1){const nq=nrm(q);let best=0;for(const i of insts){best=Math.max(best,iscore(nq,i.institution),iscore(nq,i.hi||''));if(best===100)break}
   clearTimeout(window._st);window._st=setTimeout(()=>{if(my===seq)T('search',{q,total:d.total,district:dname(cid),instMatch:best>=80,acronym:best===100})},1200)}
  if(page*SIZE<d.total)getPage(page+1,q,1).catch(()=>{});if(page>1)getPage(page-1,q,1).catch(()=>{});total=d.total;const empty=!total&&!inst&&!$('#q').value.trim();$('#empty').classList.toggle('hidden',!empty);const kw=$('#q').value.trim();const nores=!total&&!empty;
- $('#noresult').textContent=nores?('No entries found'+(kw?` for "${kw}"`:'')+(inst?(kw?' in':' for')+` "${dn(inst)}"`:'')):'';
+ $('#noresult').textContent=nores?('No entries found'+(kw?` for "${kw}"`:'')+(inst?(kw?' in':' for')+` "${instLabel()}"`:'')):'';
  $('#noresult').classList.toggle('hidden',!nores);
  document.querySelector('.table-wrap').classList.toggle('hidden',empty||nores);document.querySelector('.pager').classList.toggle('hidden',empty||nores);
  $('#summary').textContent=`${d.total} voters found`;$('#pg').textContent=`Page ${page} of ${Math.max(1,Math.ceil(total/SIZE))}`;

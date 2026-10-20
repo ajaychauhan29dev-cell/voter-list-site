@@ -50,11 +50,13 @@
       var k = 's:' + d.district + ':' + redact(d.q) + ':' + d.total;
       ev(d.total > 0 ? 'view_search_results' : 'search_no_results', p, k);
     },
-    filter: function (inst, district, n, did) {
-      var name = inst ? (instLike(inst, true) || 'other') : '(all)';
-      var k = 'f:' + did + ':' + name; if (A._lastF === k) return; A._lastF = k;   // no repeat for the same pick
-      if (inst) { try { if (ok) gtag('set', 'user_properties', { selected_institution: name, selected_inst_district: district }); } catch (e) {} }
-      ev('filter_institution', { institution_name: name, has_filter: !!inst, result_count: n, district_name: district, district_id: String(did || '') });
+    filter: function (sel, district, n, did) {
+      sel = Array.isArray(sel) ? sel : (sel ? [sel] : []);
+      var names = sel.map(function (v) { return instLike(v, true) || 'other'; });
+      var joined = names.length ? names.join(', ') : '(all)'; if (joined.length > 100) joined = joined.slice(0, 97) + '...';
+      var k = 'f:' + did + ':' + joined + ':' + sel.length; if (A._lastF === k) return; A._lastF = k;
+      if (sel.length) { try { if (ok) gtag('set', 'user_properties', { selected_institution: names[0], selected_inst_district: district }); } catch (e) {} }
+      ev('filter_institution', { institution_name: joined, institution_count: sel.length, has_filter: sel.length > 0, result_count: n, district_name: district, district_id: String(did || '') });
     },
     page: function (n, dir, district) { ev('page_change', { page_number: n, direction: dir, district_name: district }); },
     geo: function (district, state, acc) {

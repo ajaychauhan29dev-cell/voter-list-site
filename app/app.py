@@ -206,15 +206,15 @@ def fuzzy_insts(cid, q):
 
 @app.get('/api/constituencies/<int:cid>/voters')
 def voters(cid):
-    q = (request.args.get('q') or '').strip(); inst = request.args.get('institution')
+    q = (request.args.get('q') or '').strip(); inst = [x for x in request.args.getlist('institution') if x][:500]  # one or more institutions
     page = max(1, int(request.args.get('page', 1))); size = min(500, int(request.args.get('size', 50)))
     where = ['cid=?']; args = [cid]
-    if inst: where.append('institution=?'); args.append(inst)
+    if inst: where.append('institution in (' + ','.join('?' * len(inst)) + ')'); args += inst
     for term in q.split():
         # PG: "col ilike ?" (same matches as lower()/lower()) so the pg_trgm indexes can be used.
         where.append('(' + ' or '.join(f'{c} like ?' if PG else f'lower({c}) like lower(?)' for c in SEARCH_COLS) + ')'); args += [f'%{term}%']*len(SEARCH_COLS)
     lit = ' and '.join(where[1 + bool(inst):]) or '1=1'
-    base = ' and '.join(where[:1 + bool(inst)]); bargs = args[:1 + bool(inst)]; largs = args[1 + bool(inst):]
+    base = ' and '.join(where[:1 + bool(inst)]); bargs = args[:1 + len(inst)]; largs = args[1 + len(inst):]
     alts = [a.strip() for a in request.args.getlist('alt') if a.strip()][:3]
     if alts and q:
         # transliteration variants: match the typed text OR any variant (each variant = AND of its words)
