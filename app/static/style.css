@@ -124,7 +124,7 @@ body.guest .admin-only{display:none!important}
  button,.btn,select,input:not([type=checkbox]):not([type=radio]),.combo-btn{min-height:44px}
  .info summary{min-height:44px;display:flex;align-items:center}
  .social{min-height:44px}
- html,body{overflow-x:hidden}
+ body{overflow-x:clip}
 }
 /* ---- phones ---- */
 @media(max-width:640px){
