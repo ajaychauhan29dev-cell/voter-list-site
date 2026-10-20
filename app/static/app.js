@@ -13,6 +13,7 @@ function iscore(nq,v){const ne=nrm(v),ce=ne.replace(/ /g,''),cq=nq.replace(/ /g,
  const qw=mrg(nq).split(' '),ws=mrg(ne).split(' '),k=qw.length;let best=0;
  for(let i=0;i+k<=ws.length;i++){let s=0,ok=true;for(let j=0;j<k;j++){const a=qw[j],b=ws[i+j];let x=a===b?1:a.length<=2?0:b.startsWith(a)?.95:a.length<4?0:lev(a,b);if(x<.75){ok=false;break}s+=x}if(ok)best=Math.max(best,s/k)}
  return best?50+best*20:0}
+const dname=id=>{const o=[...$('#const').options].find(o=>o.value==id);return o?o.text.replace(/ \(\d+\)$/,''):''};
 let ROLE='';function setRole(r){ROLE=r||'';document.body.classList.toggle('guest',ROLE!=='admin');$('#role-tag').textContent=ROLE==='admin'?'एडमिन · Admin':'अतिथि · Guest'}
 function show(a){T('view',a?'app':'login');if(a)geoAsk();$('#login-view').classList.toggle('hidden',a);$('#app-view').classList.toggle('hidden',!a);if(a)loadConsts()}
 $('#login-form').onsubmit=async e=>{e.preventDefault();$('#login-err').textContent='';
