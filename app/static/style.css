@@ -101,4 +101,5 @@ body.guest .admin-only{display:none!important}
 .tour-step{font-size:.75rem;color:var(--muted)}.tour-btns{display:flex;gap:8px;justify-content:center;align-items:center}
 .tour-q{font-size:1.05rem;font-weight:600;margin:6px 0 14px!important}.tour-x{position:absolute;top:6px;right:6px;padding:2px 8px}
 .tour-lang{margin-top:8px;font-size:.78rem;padding:2px 8px;border:none}
-#tour-btn{font-weight:700;min-width:34px}
+#tour-btn{white-space:nowrap}
+@media(max-width:640px){.topbar-actions{flex-wrap:wrap;gap:6px}.topbar-actions button,.topbar-actions .btn{padding:6px 10px;font-size:.85rem}}
