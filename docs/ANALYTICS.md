@@ -30,7 +30,7 @@ All names are snake_case. `district_name` is the district the user **picked in t
 | `select_district` | User picks a district | `district_name`, `district_id`; also sets user property `selected_district` |
 | `view_search_results` | Search with ≥1 result (page 1, after typing settles 1.2 s, deduped per term) | `search_type` (`institution`/`voter`), `result_count`, `has_results`, `district_name`, `search_term` (institution searches only, redacted) |
 | `search_no_results` | Search with 0 results | same as above |
-| `filter_institution` | Institution chosen/cleared in dropdown | `institution_name` (only if it clearly names an institution, else `other`), `has_filter`, `result_count`, `district_name` |
+| `filter_institution` | Institution chosen/cleared in the School/Institution dropdown (once per distinct pick; re-picking the same one does not re-send) | `institution_name` (institution as in the data, lowercased, digits/punctuation removed; person-name-looking entries → `other`; cleared → `(all)`), `has_filter`, `result_count`, `district_name`, `district_id`; sets user properties `selected_institution`, `selected_institution_district` |
 | `page_change` | Next / Prev | `page_number`, `direction`, `district_name` |
 | `location_shared` | User clicked **Share** on the optional location prompt and the browser gave a position | `geo_district` (UP district or `unknown`), `geo_state` (`Uttar Pradesh` or `unknown`), `accuracy_bucket` (`<100m`, `100m-1km`, `1-10km`, `>10km`); sets user property `geo_district` |
 | `tour_language` | Language picked in the guided tour's first question | `tour_lang` (`en`/`hi`) |
@@ -44,7 +44,7 @@ All names are snake_case. `district_name` is the district the user **picked in t
 
 The institution-name EN/हिंदी toggle was removed (names show as in the source data; Hindi search still matches), so `institution_lang_toggle` is no longer sent. Not applicable today: `language_toggle` (the UI is always bilingual; there is no UI-language switch – the event name is reserved for it), `file_download` (the site has no downloads – add `file_download` with `file_type` if a download/export is added), search result clicks (rows are not clickable).
 
-User properties: `selected_district`, `geo_district`. (Register as custom dimensions.)
+User properties: `selected_district`, `geo_district`, `selected_institution`, `selected_institution_district`. (Register as custom dimensions.)
 
 ## Optional location share
 After login a small bilingual prompt ("अपना स्थान साझा करें · Share your location…") appears once. The browser permission is requested only when the user clicks **Share**; the answer is remembered in localStorage (`geo_asked`) and the prompt is never shown if analytics consent was declined. The browser sends lat/lng rounded to 3 decimals (~100 m) to `POST /api/geo` on our own server, which finds the district by point-in-polygon against the bundled offline file `app/up_districts.json` (75 UP districts, simplified from udit-001/india-maps-data). Coordinates are not stored, logged or sent to GA or any third party; only the district/state name and an accuracy bucket go to GA. Points outside UP or failed lookups give `unknown`. Note: the boundary file's upstream repo has no explicit licence; replace it with a licensed source (e.g. Survey of India / DataMeet) if that matters.
@@ -59,7 +59,7 @@ Never sent: voter names, relative names, addresses, serial numbers, EPIC/ID numb
 Analytics here collects no personal data of voters, but GA sets cookies/identifiers for visitors, so a short bilingual notice is shown on first visit with **OK** and **Decline**. Consent mode v2: `analytics_storage` is `granted` by default (notice-based), `ad_storage`, `ad_user_data`, `ad_personalization` are always `denied`. **Decline** stores `ga_consent=denied` in localStorage and calls `gtag('consent','update',{analytics_storage:'denied'})` (GA then only sends cookieless pings). This is a pragmatic notice approach; have counsel review if the site starts collecting user accounts or targets regulated processing.
 
 ## GA4 setup (one-time, in GA Admin)
-1. Admin → Custom definitions → Create custom dimensions (event scope): `district_name`, `search_type`, `institution_name`, `login_status`, `method`, `direction`, `upload_status`, `error_type`, `error_detail`; `geo_district`, `geo_state`, `accuracy_bucket`, `tour_lang`, `step`; user scope: `selected_district`, `geo_district`. Metrics: `result_count`, `page_number`, `file_size_kb`.
+1. Admin → Custom definitions → Create custom dimensions (event scope): `district_name`, `search_type`, `institution_name`, `login_status`, `method`, `direction`, `upload_status`, `error_type`, `error_detail`; `geo_district`, `geo_state`, `accuracy_bucket`, `tour_lang`, `step`; `district_id`; user scope: `selected_district`, `geo_district`, `selected_institution`, `selected_institution_district`. Metrics: `result_count`, `page_number`, `file_size_kb`.
 2. Admin → Data streams → Enhanced measurement: keep Page views on but turn **off** "Page changes based on browser history events" (we send page_view manually) and "Site search" (we send our own redacted event).
 3. Admin → Data retention → 14 months.
 4. Mark `login` as a key event if useful.
@@ -71,6 +71,9 @@ Analytics here collects no personal data of voters, but GA sets cookies/identifi
 - **Funnel**: Explore → Funnel: `page_view` (/login) → `login` → `select_district` → `view_search_results` or `page_change`.
 - **Guest vs admin**: Free form, rows `method`, filter `login`, breakdown `login_status`.
 - **Errors**: Free form, rows `error_type`, `error_detail`, event `app_error`.
+
+### Institutions by district
+Explore → Free form: rows `institution_name`, then `district_name`; values Event count, Total users; filter Event name = `filter_institution` and `institution_name` ≠ `(all)`. For a per-user view use the user dimensions `selected_institution` / `selected_institution_district`.
 
 ## Looker Studio
 1. lookerstudio.google.com → Create → Report → Add data → Google Analytics → account → "Voter List Site".

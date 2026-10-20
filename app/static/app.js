@@ -68,7 +68,7 @@ function getPage(pg,q,bg){const k=pkey(pg,q);if(PC.has(k))return PC.get(k);const
  PC.set(k,pr);pr.catch(()=>PC.delete(k));if(PC.size>200)PC.delete(PC.keys().next().value);return pr}
 let seq=0;async function load(){const my=++seq;const q=$('#q').value;
  let d;try{d=await getPage(page,q)}catch(e){if(e!==0)T('error','api_voters',String(e&&e.message||e));return}if(my!==seq)return;
- if(instEv){instEv=false;T('filter',inst,dname(cid),d.total)}
+ if(instEv){instEv=false;T('filter',inst,dname(cid),d.total,cid)}
  if(q.trim()&&page===1){const nq=nrm(q);let best=0;for(const i of insts){best=Math.max(best,iscore(nq,i.institution),iscore(nq,i.hi||''));if(best===100)break}
   clearTimeout(window._st);window._st=setTimeout(()=>{if(my===seq)T('search',{q,total:d.total,district:dname(cid),instMatch:best>=80,acronym:best===100})},1200)}
  if(page*SIZE<d.total)getPage(page+1,q,1).catch(()=>{});if(page>1)getPage(page-1,q,1).catch(()=>{});total=d.total;const empty=!total&&!inst&&!$('#q').value.trim();$('#empty').classList.toggle('hidden',!empty);const kw=$('#q').value.trim();const nores=!total&&!empty;

@@ -50,9 +50,11 @@
       var k = 's:' + d.district + ':' + redact(d.q) + ':' + d.total;
       ev(d.total > 0 ? 'view_search_results' : 'search_no_results', p, k);
     },
-    filter: function (inst, district, n) {
-      var name = instLike(inst, true);
-      ev('filter_institution', { institution_name: name || 'other', has_filter: !!inst, result_count: n, district_name: district });
+    filter: function (inst, district, n, did) {
+      var name = inst ? (instLike(inst, true) || 'other') : '(all)';
+      var k = 'f:' + did + ':' + name; if (A._lastF === k) return; A._lastF = k;   // no repeat for the same pick
+      if (inst) { try { if (ok) gtag('set', 'user_properties', { selected_institution: name, selected_institution_district: district }); } catch (e) {} }
+      ev('filter_institution', { institution_name: name, has_filter: !!inst, result_count: n, district_name: district, district_id: String(did || '') });
     },
     page: function (n, dir, district) { ev('page_change', { page_number: n, direction: dir, district_name: district }); },
     geo: function (district, state, acc) {
