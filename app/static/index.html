@@ -2,7 +2,7 @@
 <title>Dr. Kuldeep Malik – Voter List Portal</title>
 <link rel="icon" href="/static/favicon.png"><link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Mukta:wght@400;600;800&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'"><noscript><link href="https://fonts.googleapis.com/css2?family=Mukta:wght@400;600;800&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet"></noscript><link rel="stylesheet" href="/static/style.css"></head><body>
+<link href="https://fonts.googleapis.com/css2?family=Mukta:wght@400;600;800&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'"><noscript><link href="https://fonts.googleapis.com/css2?family=Mukta:wght@400;600;800&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet"></noscript><link rel="stylesheet" href="/static/style.css?v=ga1"></head><body>
 <section id="login-view" class="view">
  <div class="hero hero-login">
   <div class="tiranga-bar"></div>
@@ -113,4 +113,7 @@
 <dialog id="del-dlg"><form method="dialog"><h2>Delete District (ज़िला)</h2>
   <p>Are you sure you want to delete <b id="del-name"></b> district? All of its voter data will be permanently lost.</p><p id="del-err" class="err"></p>
   <menu><button value="cancel" class="ghost">Cancel</button><button type="button" id="del-go" class="danger">Delete</button></menu></form></dialog>
-<script src="/static/app.js?v=search1"></script></body></html>
+<div id="ga-notice" class="ga-notice hidden" role="dialog" aria-label="Analytics notice"><span>हम साइट को बेहतर बनाने के लिए Google Analytics से गुमनाम उपयोग आँकड़े (जैसे चुना गया ज़िला, पेज) एकत्र करते हैं। मतदाता की कोई व्यक्तिगत जानकारी नहीं भेजी जाती। · We use Google Analytics to collect anonymous usage statistics (e.g. district selected, pages viewed). No voter personal data is sent.</span><span class="ga-actions"><button type="button" id="ga-ok">ठीक है · OK</button><button type="button" id="ga-no" class="ghost">अस्वीकार · Decline</button></span></div>
+<script>window.track=function(){(window._tq=window._tq||[]).push([].slice.call(arguments))};</script>
+<script src="/ga.js" async></script>
+<script src="/static/app.js?v=ga1"></script></body></html>

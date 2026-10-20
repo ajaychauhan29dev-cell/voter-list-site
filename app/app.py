@@ -289,6 +289,17 @@ def upload(cid):
 @app.get('/api/jobs/<jid>')
 def job(jid): return jsonify(JOBS.get(jid) or {'status': 'unknown'})
 
+GA_PROD_HOST = 'voter-list-site.onrender.com'; GA_DEFAULT_ID = 'G-H222BYZLFJ'
+@app.get('/ga.js')
+def ga_js():
+    # GA4 config: env GA_MEASUREMENT_ID wins; otherwise the default ID only on the production host. Never on localhost/dev.
+    host = (request.headers.get('X-Forwarded-Host') or request.host or '').split(':')[0].lower()
+    gid = os.environ.get('GA_MEASUREMENT_ID') or (GA_DEFAULT_ID if host == GA_PROD_HOST else '')
+    if host in ('localhost', '127.0.0.1', '0.0.0.0') or host.endswith('.local') or os.environ.get('GA_DISABLED'): gid = ''
+    cfg = json.dumps({'id': gid, 'debug': os.environ.get('GA_DEBUG', '') in ('1', 'true', 'yes')})
+    body = f'window.GA_CFG={cfg};\n' + open(os.path.join(os.path.dirname(__file__), 'static', 'analytics.js'), encoding='utf-8').read()
+    r = make_response(body); r.headers['Content-Type'] = 'application/javascript; charset=utf-8'; r.headers['Cache-Control'] = 'no-cache'
+    return r
 @app.get('/')
 def index(): return send_from_directory(os.path.join(os.path.dirname(__file__), 'static'), 'index.html')
 @app.get('/static/<path:p>')
