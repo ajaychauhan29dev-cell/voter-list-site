@@ -26,7 +26,7 @@ async function show(){const st=STEPS[i];if(st.need)await ensureList();if(!runnin
   else if(a==='back'){i=Math.max(0,i-1);show()}else if(a==='skip'){T('tour','skip',i+1);set('tour_done','1');close()}else if(a==='lang'){L=L==='hi'?'en':'hi';set('tour_lang',L);T('tourLang',L);show()}};
  place();card.querySelector('[data-a=next]').focus({preventScroll:true})}
 function place(){if(!running||!box||!card||card.classList.contains('center'))return;const el=$(STEPS[i].sel);if(!visible(el))return;const r=el.getBoundingClientRect(),p=6;
- Object.assign(box.style,{top:r.top-p+'px',left:r.left-p+'px',width:r.width+2*p+'px',height:r.height+2*p+'px'});
+ const t0=Math.max(4,r.top-p),b0=Math.min(innerHeight-4,r.bottom+p);Object.assign(box.style,{top:t0+'px',left:r.left-p+'px',width:r.width+2*p+'px',height:Math.max(0,b0-t0)+'px'});
  const mob=innerWidth<640,cw=Math.min(340,innerWidth-24),ch=card.offsetHeight;card.style.width=cw+'px';
  if(mob){card.style.left='12px';card.style.width=innerWidth-24+'px';card.style.top=(r.bottom+ch+16<innerHeight?r.bottom+12:Math.max(12,r.top-ch-12))+'px';return}
  let top=r.bottom+12;if(top+ch>innerHeight-8)top=r.top-ch-12;if(top<8)top=Math.max(8,innerHeight-ch-8);
