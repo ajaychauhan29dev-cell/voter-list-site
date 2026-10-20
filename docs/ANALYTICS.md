@@ -32,7 +32,7 @@ All names are snake_case. `district_name` is the district the user **picked in t
 | `search_no_results` | Search with 0 results | same as above |
 | `filter_institution` | Institution chosen/cleared in dropdown | `institution_name` (only if it clearly names an institution, else `other`), `has_filter`, `result_count`, `district_name` |
 | `page_change` | Next / Prev | `page_number`, `direction`, `district_name` |
-| `institution_lang_toggle` | EN/हिंदी institution-name toggle | `language` (`en`/`hi`) |
+| `institution_lang_toggle` | EN/हिंदी institution-name toggle | `name_language` (`en`/`hi`; GA reserves `language`) |
 | `file_upload` | Admin PDF upload (started / finished / error / fail) | `upload_status`, `file_size_kb`, `district_name` (no file name) |
 | `app_error` | JS error, unhandled promise rejection, failed district/voter API call (max 10 per page load, deduped) | `error_type`, `error_detail` (digits → N, emails removed, ≤90 chars) |
 
@@ -50,7 +50,7 @@ Never sent: voter names, relative names, addresses, serial numbers, EPIC/ID numb
 Analytics here collects no personal data of voters, but GA sets cookies/identifiers for visitors, so a short bilingual notice is shown on first visit with **OK** and **Decline**. Consent mode v2: `analytics_storage` is `granted` by default (notice-based), `ad_storage`, `ad_user_data`, `ad_personalization` are always `denied`. **Decline** stores `ga_consent=denied` in localStorage and calls `gtag('consent','update',{analytics_storage:'denied'})` (GA then only sends cookieless pings). This is a pragmatic notice approach; have counsel review if the site starts collecting user accounts or targets regulated processing.
 
 ## GA4 setup (one-time, in GA Admin)
-1. Admin → Custom definitions → Create custom dimensions (event scope): `district_name`, `search_type`, `institution_name`, `login_status`, `method`, `direction`, `language`, `upload_status`, `error_type`, `error_detail`; user scope: `selected_district`. Metrics: `result_count`, `page_number`, `file_size_kb`.
+1. Admin → Custom definitions → Create custom dimensions (event scope): `district_name`, `search_type`, `institution_name`, `login_status`, `method`, `direction`, `name_language`, `upload_status`, `error_type`, `error_detail`; user scope: `selected_district`. Metrics: `result_count`, `page_number`, `file_size_kb`.
 2. Admin → Data streams → Enhanced measurement: keep Page views on but turn **off** "Page changes based on browser history events" (we send page_view manually) and "Site search" (we send our own redacted event).
 3. Admin → Data retention → 14 months.
 4. Mark `login` as a key event if useful.
