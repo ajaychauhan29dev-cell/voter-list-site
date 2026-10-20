@@ -33,6 +33,10 @@ All names are snake_case. `district_name` is the district the user **picked in t
 | `filter_institution` | Institution chosen/cleared in dropdown | `institution_name` (only if it clearly names an institution, else `other`), `has_filter`, `result_count`, `district_name` |
 | `page_change` | Next / Prev | `page_number`, `direction`, `district_name` |
 | `location_shared` | User clicked **Share** on the optional location prompt and the browser gave a position | `geo_district` (UP district or `unknown`), `geo_state` (`Uttar Pradesh` or `unknown`), `accuracy_bucket` (`<100m`, `100m-1km`, `1-10km`, `>10km`); sets user property `geo_district` |
+| `tour_language` | Language picked in the guided tour's first question | `tour_lang` (`en`/`hi`) |
+| `tour_start` | Guided tour starts (first visit after login, or "?" replay) | `step` |
+| `tour_complete` | User finished the last step | `step` |
+| `tour_skip` | Skip / ✕ / Esc | `step` (0 = on the language question) |
 | `location_denied` | User clicked Share but blocked/failed the browser permission | – |
 | `location_dismissed` | User clicked "No thanks" on the prompt | – |
 | `file_upload` | Admin PDF upload (started / finished / error / fail) | `upload_status`, `file_size_kb`, `district_name` (no file name) |
@@ -55,7 +59,7 @@ Never sent: voter names, relative names, addresses, serial numbers, EPIC/ID numb
 Analytics here collects no personal data of voters, but GA sets cookies/identifiers for visitors, so a short bilingual notice is shown on first visit with **OK** and **Decline**. Consent mode v2: `analytics_storage` is `granted` by default (notice-based), `ad_storage`, `ad_user_data`, `ad_personalization` are always `denied`. **Decline** stores `ga_consent=denied` in localStorage and calls `gtag('consent','update',{analytics_storage:'denied'})` (GA then only sends cookieless pings). This is a pragmatic notice approach; have counsel review if the site starts collecting user accounts or targets regulated processing.
 
 ## GA4 setup (one-time, in GA Admin)
-1. Admin → Custom definitions → Create custom dimensions (event scope): `district_name`, `search_type`, `institution_name`, `login_status`, `method`, `direction`, `upload_status`, `error_type`, `error_detail`; `geo_district`, `geo_state`, `accuracy_bucket`; user scope: `selected_district`, `geo_district`. Metrics: `result_count`, `page_number`, `file_size_kb`.
+1. Admin → Custom definitions → Create custom dimensions (event scope): `district_name`, `search_type`, `institution_name`, `login_status`, `method`, `direction`, `upload_status`, `error_type`, `error_detail`; `geo_district`, `geo_state`, `accuracy_bucket`, `tour_lang`, `step`; user scope: `selected_district`, `geo_district`. Metrics: `result_count`, `page_number`, `file_size_kb`.
 2. Admin → Data streams → Enhanced measurement: keep Page views on but turn **off** "Page changes based on browser history events" (we send page_view manually) and "Site search" (we send our own redacted event).
 3. Admin → Data retention → 14 months.
 4. Mark `login` as a key event if useful.

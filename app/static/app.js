@@ -15,7 +15,7 @@ function iscore(nq,v){const ne=nrm(v),ce=ne.replace(/ /g,''),cq=nq.replace(/ /g,
  return best?50+best*20:0}
 const dname=id=>{const o=[...$('#const').options].find(o=>o.value==id);return o?o.text.replace(/ \(\d+\)$/,''):''};
 let ROLE='';function setRole(r){ROLE=r||'';document.body.classList.toggle('guest',ROLE!=='admin');$('#role-tag').textContent=ROLE==='admin'?'एडमिन · Admin':'अतिथि · Guest'}
-function show(a){T('view',a?'app':'login');if(a)geoAsk();$('#login-view').classList.toggle('hidden',a);$('#app-view').classList.toggle('hidden',!a);if(a)loadConsts()}
+function show(a){T('view',a?'app':'login');if(a)geoAsk();if(a)setTimeout(()=>{try{window.Tour&&Tour.auto()}catch(e){}},0);$('#login-view').classList.toggle('hidden',a);$('#app-view').classList.toggle('hidden',!a);if(a)loadConsts()}
 $('#login-form').onsubmit=async e=>{e.preventDefault();$('#login-err').textContent='';
  const r=await api('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:$('#lid').value,password:$('#lpw').value})});
  T('login','admin',r.ok);if(r.ok){setRole('admin');show(true)}else $('#login-err').textContent='Invalid ID or password'};

@@ -59,6 +59,8 @@
       try { if (ok) gtag('set', 'user_properties', { geo_district: district }); } catch (e) {}
       ev('location_shared', { geo_district: district, geo_state: state, accuracy_bucket: acc }, 'geo');
     },
+    tour: function (kind, step) { ev('tour_' + kind, { step: step }); },
+    tourLang: function (l) { ev('tour_language', { tour_lang: l }); },
     geoNo: function (kind) { ev(kind === 'denied' ? 'location_denied' : 'location_dismissed', {}, 'geono'); },
     upload: function (status, size, district) { ev('file_upload', { upload_status: status, file_size_kb: Math.round((size || 0) / 1024), district_name: district }); },
     error: function (type, detail) {
