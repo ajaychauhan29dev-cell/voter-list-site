@@ -215,6 +215,17 @@ def voters(cid):
         where.append('(' + ' or '.join(f'{c} like ?' if PG else f'lower({c}) like lower(?)' for c in SEARCH_COLS) + ')'); args += [f'%{term}%']*len(SEARCH_COLS)
     lit = ' and '.join(where[1 + bool(inst):]) or '1=1'
     base = ' and '.join(where[:1 + bool(inst)]); bargs = args[:1 + bool(inst)]; largs = args[1 + bool(inst):]
+    alts = [a.strip() for a in request.args.getlist('alt') if a.strip()][:3]
+    if alts and q:
+        # transliteration variants: match the typed text OR any variant (each variant = AND of its words)
+        lits = ['(' + lit + ')']
+        for a in alts:
+            cl = []
+            for term in a.split():
+                cl.append('(' + ' or '.join(f'{c} like ?' if PG else f'lower({c}) like lower(?)' for c in SEARCH_COLS) + ')'); largs = largs + [f'%{term}%']*len(SEARCH_COLS)
+            lits.append('(' + ' and '.join(cl) + ')')
+        lit = '(' + ' or '.join(lits) + ')'
+        where = where[:1 + bool(inst)] + [lit]; args = bargs + largs
     fz = fuzzy_insts(cid, q) if q and not inst else []
     if fz:
         strong = [n for n, sc in fz if sc >= 80]; allm = [n for n, _ in fz]
@@ -297,6 +308,28 @@ def _in_ring(x, y, ring):
         if (yi > y) != (yj > y) and x < (xj - xi) * (y - yi) / (yj - yi) + xi: ins = not ins
         j = i
     return ins
+TRANSLIT = {}
+@app.get('/api/translit')
+def translit():
+    # English -> Devanagari suggestions via Google Input Tools, called server-side; cached; empty list on any failure.
+    q = ' '.join((request.args.get('q') or '').split())[:80]
+    if not q or not re.search('[A-Za-z]', q): return jsonify(variants=[])
+    k = q.lower()
+    if k not in TRANSLIT:
+        import urllib.request, urllib.parse
+        try:
+            u = 'https://inputtools.google.com/request?' + urllib.parse.urlencode(dict(text=k, itc='hi-t-i0-und', num=3, ie='utf-8', oe='utf-8'))
+            with urllib.request.urlopen(u, timeout=4) as resp: j = json.load(resp)
+            v = []
+            if j[0] == 'SUCCESS':
+                for x in j[1][0][1]:
+                    if x not in v: v.append(x)
+            if len(TRANSLIT) > 5000: TRANSLIT.clear()
+            TRANSLIT[k] = v[:3]
+        except Exception:
+            return jsonify(variants=[], error='unavailable')
+    return jsonify(variants=TRANSLIT[k])
+
 @app.post('/api/geo')
 def geo():
     # Map a point to a UP district using the bundled offline boundaries (up_districts.json).

@@ -58,11 +58,11 @@ $('#inst-list').addEventListener('scroll',e=>{const u=e.target;if(instN<instF.le
 $('#inst-btn').onclick=()=>{$('#inst-pop').classList.toggle('hidden');$('#inst-q').value='';renderInsts();$('#inst-q').focus()};
 $('#inst-q').oninput=renderInsts;$('#inst-list').onclick=e=>{if(e.target.dataset.v!==undefined)setInst(e.target.dataset.v)};
 document.addEventListener('click',e=>{if(!e.target.closest('.combo'))$('#inst-pop').classList.add('hidden')});
-let t;$('#q').oninput=()=>{clearTimeout(t);t=setTimeout(()=>{page=1;load()},300)};
+let t;$('#q').oninput=()=>{ALT=[];$('#tr-chips').innerHTML='';clearTimeout(t);t=setTimeout(()=>{page=1;load()},300)};
 $('#prev').onclick=()=>{if(page>1){page--;T('page',page,'prev',dname(cid));load()}};$('#next').onclick=()=>{if(page*SIZE<total){page++;T('page',page,'next',dname(cid));load()}};
 // Page cache + background prefetch so Next/Prev are instant. Cleared whenever the district changes (incl. after upload/delete).
-let PC=new Map();const pkey=(pg,q)=>`${cid}|${inst}|${q}|${pg}`;
-function getPage(pg,q,bg){const k=pkey(pg,q);if(PC.has(k))return PC.get(k);const p=new URLSearchParams({q,page:pg,size:SIZE});if(inst)p.set('institution',inst);
+let PC=new Map(),ALT=[];const pkey=(pg,q)=>`${cid}|${inst}|${q}|${ALT.join(',')}|${pg}`;
+function getPage(pg,q,bg){const k=pkey(pg,q);if(PC.has(k))return PC.get(k);const p=new URLSearchParams({q,page:pg,size:SIZE});if(inst)p.set('institution',inst);ALT.forEach(a=>p.append('alt',a));
  const u=`/api/constituencies/${cid}/voters?${p}`;
  const pr=(bg?fetch(u,{credentials:'same-origin'}).then(r=>{if(!r.ok)throw 0;return r.json()}):api(u).then(r=>{if(!r.ok)throw 0;return r.json()}));
  PC.set(k,pr);pr.catch(()=>PC.delete(k));if(PC.size>200)PC.delete(PC.keys().next().value);return pr}
@@ -101,3 +101,10 @@ function geoAsk(){let st='';try{st=localStorage.getItem('geo_asked')||'';if(loca
    if(g.state!=='Uttar Pradesh')g={district:'unknown',state:g.state||'unknown'};const a=p.coords.accuracy;
    T('geo',g.district,g.state,a<=100?'<100m':a<=1000?'100m-1km':a<=10000?'1-10km':'>10km')},
   ()=>{try{localStorage.setItem('geo_asked','denied')}catch(e){}T('geoNo','denied')},{timeout:15000,maximumAge:600000})}}
+
+// "To Hindi": transliterate typed English via our server, show chips, search with the first + OR of the others.
+$('#tr-btn').onclick=async()=>{const v=$('#q').value.trim();const c=$('#tr-chips');if(!v||!/[A-Za-z]/.test(v)){c.innerHTML='<span class="tr-msg">अंग्रेज़ी में नाम लिखें · Type a name in English first</span>';return}
+ c.innerHTML='<span class="spinner inline"></span>';let vs=[];try{const r=await api('/api/translit?'+new URLSearchParams({q:v}));if(r.ok)vs=(await r.json()).variants||[]}catch(e){}
+ if(!vs.length){c.innerHTML='<span class="tr-msg">अभी उपलब्ध नहीं · Not available right now</span>';return}
+ T('translit',vs.length);const pickV=k=>{$('#q').value=vs[k];ALT=vs.filter((_,i)=>i!==k);[...c.children].forEach((b,i)=>b.classList.toggle('on',i===k));clearTimeout(t);page=1;load()};
+ c.innerHTML=vs.map((x,i)=>`<button type="button" class="chip">${esc(x)}</button>`).join('');[...c.children].forEach((b,i)=>b.onclick=()=>pickV(i));pickV(0)};
