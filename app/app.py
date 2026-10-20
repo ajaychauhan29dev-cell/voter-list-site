@@ -366,7 +366,14 @@ def ga_js():
     r = make_response(body); r.headers['Content-Type'] = 'application/javascript; charset=utf-8'; r.headers['Cache-Control'] = 'no-cache'
     return r
 @app.get('/')
-def index(): return send_from_directory(os.path.join(os.path.dirname(__file__), 'static'), 'index.html')
+def index():
+    # Inline the small stylesheet so the first paint needs no extra round trip (faster on mobile/3G).
+    d = os.path.join(os.path.dirname(__file__), 'static')
+    h = open(os.path.join(d, 'index.html'), encoding='utf-8').read()
+    m = re.search(r'<link rel="stylesheet" href="/static/style\.css[^"]*">', h)
+    if m: h = h.replace(m.group(0), '<style>' + open(os.path.join(d, 'style.css'), encoding='utf-8').read() + '</style>')
+    r = make_response(h); r.headers['Content-Type'] = 'text/html; charset=utf-8'; r.headers['Cache-Control'] = 'no-cache'
+    return r
 @app.get('/static/<path:p>')
 def st(p):
     # versioned assets (?v=) are immutable for 30 days; others 1 day
