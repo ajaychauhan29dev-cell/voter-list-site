@@ -4,7 +4,7 @@ let busy=0;const setBusy=d=>{busy=Math.max(0,busy+d);document.body.classList.tog
 const api=async(u,o={})=>{setBusy(1);try{const r=await fetch(u,{credentials:'same-origin',...o});if(r.status==401&&u!='/api/login'){show(false);throw 0}
  const t=await r.text();return{ok:r.ok,status:r.status,json:async()=>JSON.parse(t)}}finally{setBusy(-1)}};
 const esc=s=>(s??'').toString().replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-let LANG=localStorage.getItem('instLang')||'en',HI={};const dn=n=>LANG==='hi'&&HI[n]?HI[n]:n;
+try{localStorage.removeItem('instLang')}catch(e){}let LANG='en',HI={};const dn=n=>LANG==='hi'&&HI[n]?HI[n]:n;
 const nrm=t=>(t||'').toLowerCase().replace(/([\u0900-\u097f])0/g,'$1 ').replace(/[^a-z0-9\u0900-\u097f]+/g,' ').trim().replace(/\s+/g,' ');
 const mrg=t=>t.replace(/\b(\w)\b ?(?=\w\b)/g,'$1');
 function lev(a,b){const m=a.length,n=b.length;let p=Array.from({length:n+1},(_,j)=>j);for(let i=1;i<=m;i++){const c=[i];for(let j=1;j<=n;j++)c[j]=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1));p=c}return 1-p[n]/Math.max(m,n,1)}
@@ -13,11 +13,8 @@ function iscore(nq,v){const ne=nrm(v),ce=ne.replace(/ /g,''),cq=nq.replace(/ /g,
  const qw=mrg(nq).split(' '),ws=mrg(ne).split(' '),k=qw.length;let best=0;
  for(let i=0;i+k<=ws.length;i++){let s=0,ok=true;for(let j=0;j<k;j++){const a=qw[j],b=ws[i+j];let x=a===b?1:a.length<=2?0:b.startsWith(a)?.95:a.length<4?0:lev(a,b);if(x<.75){ok=false;break}s+=x}if(ok)best=Math.max(best,s/k)}
  return best?50+best*20:0}
-function setLang(l){LANG=l;localStorage.setItem('instLang',l);$('#lang-btn').textContent=l==='hi'?'संस्थान: हिंदी · EN':'Institutions: EN · हिंदी';
- if(cid){$('#inst-btn').textContent=(inst?dn(inst):'All institutions')+' ▾';if(lastD)renderRows(lastD.rows);if(!$('#inst-pop').classList.contains('hidden'))renderInsts()}}
-const dname=id=>{const o=[...$('#const').options].find(o=>o.value==id);return o?o.text.replace(/ \(\d+\)$/,''):''};
 let ROLE='';function setRole(r){ROLE=r||'';document.body.classList.toggle('guest',ROLE!=='admin');$('#role-tag').textContent=ROLE==='admin'?'एडमिन · Admin':'अतिथि · Guest'}
-function show(a){T('view',a?'app':'login');$('#login-view').classList.toggle('hidden',a);$('#app-view').classList.toggle('hidden',!a);if(a)loadConsts()}
+function show(a){T('view',a?'app':'login');if(a)geoAsk();$('#login-view').classList.toggle('hidden',a);$('#app-view').classList.toggle('hidden',!a);if(a)loadConsts()}
 $('#login-form').onsubmit=async e=>{e.preventDefault();$('#login-err').textContent='';
  const r=await api('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:$('#lid').value,password:$('#lpw').value})});
  T('login','admin',r.ok);if(r.ok){setRole('admin');show(true)}else $('#login-err').textContent='Invalid ID or password'};
@@ -31,7 +28,7 @@ async function loadConsts(keep){const s=$('#const');const first=!s.dataset.loade
  s.innerHTML=(cs.length?'<option value="">Please choose District (ज़िला)</option>':'<option value="">No districts yet (कोई ज़िला नहीं)</option>')+cs.map(c=>`<option value="${c.id}">${esc(c.name)} (${c.n})</option>`).join('');s.value=keep||cid}
 $('#const-retry').onclick=()=>loadConsts();
 $('#const').onchange=async e=>{PC.clear();if(e.target.value&&e.target.value!==cid)T('district',dname(e.target.value),e.target.value);cid=e.target.value;inst='';page=1;$('#q').value='';$('#del-const').disabled=!cid;$('#list-area').classList.toggle('hidden',!cid);
- if(!cid)return;insts=[];HI={};setInst('');const my=cid;const r=await (await api(`/api/constituencies/${cid}/institutions`)).json();if(my===cid){insts=r;r.forEach(i=>{if(i.hi)HI[i.institution]=i.hi});setLang(LANG)}};
+ if(!cid)return;insts=[];HI={};setInst('');const my=cid;const r=await (await api(`/api/constituencies/${cid}/institutions`)).json();if(my===cid){insts=r;r.forEach(i=>{if(i.hi)HI[i.institution]=i.hi})}};
 let newCid='';
 $('#add-const').onclick=()=>{newCid='';$('#add-name').value='';$('#add-err').textContent='';$('#add-status').textContent='';$('#add-file').value='';
  $('#add-step1').classList.remove('hidden');$('#add-step2').classList.add('hidden');$('#add-go').disabled=false;$('#add-dlg').showModal();$('#add-name').focus()};
@@ -88,8 +85,18 @@ $('#del-go').onclick=async()=>{$('#del-go').disabled=true;const r=await api(`/ap
  $('#del-dlg').close();cid='';$('#list-area').classList.add('hidden');$('#del-const').disabled=true;await loadConsts('')};
 $('#up-go').onclick=e=>{e.preventDefault();startUpload(cid,$('#up-file').files[0],$('#up-replace').checked,$('#up-status'),$('#up-go'),()=>openConst(cid))};
 api('/api/me').then(async r=>{if(r.ok)setRole((await r.json()).role);show(r.ok)}).catch(()=>{});
-$('#lang-btn').onclick=()=>{setLang(LANG==='hi'?'en':'hi');T('lang',LANG)};setLang(LANG);
 $('#contact-btn').onclick=e=>{e.preventDefault();const f=$('#contact');f.scrollIntoView({behavior:'smooth',block:'end'});setTimeout(()=>{if(Math.abs(f.getBoundingClientRect().bottom-innerHeight)>4)f.scrollIntoView({block:'end'})},700)};
 
 (()=>{const b=$('#ga-notice');if(!b)return;let v='';try{v=localStorage.getItem('ga_consent')||''}catch(e){}if(!v)b.classList.remove('hidden');
  $('#ga-ok').onclick=()=>{T('consent','granted');b.classList.add('hidden')};$('#ga-no').onclick=()=>{T('consent','denied');try{localStorage.setItem('ga_consent','denied')}catch(e){}b.classList.add('hidden')}})();
+
+// Optional location share: asked once after login, only on "Share"; skipped if analytics consent was declined.
+function geoAsk(){let st='';try{st=localStorage.getItem('geo_asked')||'';if(localStorage.getItem('ga_consent')==='denied')st='consent'}catch(e){st='x'}
+ const b=$('#geo-notice');if(st||!b||!navigator.geolocation)return;b.classList.remove('hidden');
+ const done=v=>{try{localStorage.setItem('geo_asked',v)}catch(e){}b.classList.add('hidden')};
+ $('#geo-no').onclick=()=>{done('dismissed');T('geoNo','dismissed')};
+ $('#geo-ok').onclick=()=>{done('shared');navigator.geolocation.getCurrentPosition(async p=>{let g={district:'unknown',state:'unknown'};
+   try{const r=await fetch('/api/geo',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({lat:+p.coords.latitude.toFixed(3),lng:+p.coords.longitude.toFixed(3)})});if(r.ok)g=await r.json()}catch(e){}
+   if(g.state!=='Uttar Pradesh')g={district:'unknown',state:g.state||'unknown'};const a=p.coords.accuracy;
+   T('geo',g.district,g.state,a<=100?'<100m':a<=1000?'100m-1km':a<=10000?'1-10km':'>10km')},
+  ()=>{try{localStorage.setItem('geo_asked','denied')}catch(e){}T('geoNo','denied')},{timeout:15000,maximumAge:600000})}}

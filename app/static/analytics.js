@@ -55,7 +55,11 @@
       ev('filter_institution', { institution_name: name || 'other', has_filter: !!inst, result_count: n, district_name: district });
     },
     page: function (n, dir, district) { ev('page_change', { page_number: n, direction: dir, district_name: district }); },
-    lang: function (l) { ev('institution_lang_toggle', { name_language: l }); },
+    geo: function (district, state, acc) {
+      try { if (ok) gtag('set', 'user_properties', { geo_district: district }); } catch (e) {}
+      ev('location_shared', { geo_district: district, geo_state: state, accuracy_bucket: acc }, 'geo');
+    },
+    geoNo: function (kind) { ev(kind === 'denied' ? 'location_denied' : 'location_dismissed', {}, 'geono'); },
     upload: function (status, size, district) { ev('file_upload', { upload_status: status, file_size_kb: Math.round((size || 0) / 1024), district_name: district }); },
     error: function (type, detail) {
       if (errs >= 10) return; errs++;

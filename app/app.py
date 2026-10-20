@@ -139,7 +139,7 @@ def role():
 def guard():
     if request.path.startswith('/api/') and request.path not in ('/api/login', '/api/guest') and not authed():
         return jsonify(error='unauthorized'), 401
-    if request.path.startswith('/api/') and request.method not in ('GET', 'HEAD', 'OPTIONS') and request.path not in ('/api/login', '/api/guest', '/api/logout') and role() != 'admin':
+    if request.path.startswith('/api/') and request.method not in ('GET', 'HEAD', 'OPTIONS') and request.path not in ('/api/login', '/api/guest', '/api/logout', '/api/geo') and role() != 'admin':
         return jsonify(error='forbidden: admin only'), 403
     if request.path.startswith('/api/jobs/') and role() != 'admin':
         return jsonify(error='forbidden: admin only'), 403
@@ -288,6 +288,36 @@ def upload(cid):
     return jsonify(job=jid)
 @app.get('/api/jobs/<jid>')
 def job(jid): return jsonify(JOBS.get(jid) or {'status': 'unknown'})
+
+_GEO = None
+def _in_ring(x, y, ring):
+    ins = False; j = len(ring) - 1
+    for i in range(len(ring)):
+        xi, yi = ring[i]; xj, yj = ring[j]
+        if (yi > y) != (yj > y) and x < (xj - xi) * (y - yi) / (yj - yi) + xi: ins = not ins
+        j = i
+    return ins
+@app.post('/api/geo')
+def geo():
+    # Map a point to a UP district using the bundled offline boundaries (up_districts.json).
+    # Coordinates are rounded and used only for this lookup: never stored, logged or forwarded.
+    global _GEO
+    d = request.get_json(force=True, silent=True) or {}
+    try: x = round(float(d.get('lng')), 3); y = round(float(d.get('lat')), 3)
+    except Exception: return jsonify(district='unknown', state='unknown')
+    if _GEO is None:
+        _GEO = json.load(open(os.path.join(os.path.dirname(__file__), 'up_districts.json')))
+        for f in _GEO:
+            polys = f['c'] if f['t'] == 'MultiPolygon' else [f['c']]
+            xs = [p[0] for poly in polys for p in poly[0]]; ys = [p[1] for poly in polys for p in poly[0]]
+            f['polys'] = polys; f['bb'] = (min(xs), min(ys), max(xs), max(ys))
+    for f in _GEO:
+        b = f['bb']
+        if not (b[0] <= x <= b[2] and b[1] <= y <= b[3]): continue
+        for poly in f['polys']:
+            if _in_ring(x, y, poly[0]) and not any(_in_ring(x, y, h) for h in poly[1:]):
+                return jsonify(district=f['d'], state=f['s'])
+    return jsonify(district='unknown', state='unknown')
 
 GA_PROD_HOST = 'voter-list-site.onrender.com'; GA_DEFAULT_ID = 'G-H222BYZLFJ'
 @app.get('/ga.js')
