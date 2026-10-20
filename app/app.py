@@ -21,7 +21,8 @@ if PG and not os.environ.get('NEON_HTTP'):
     # Reuse connections across requests (new TLS connections to Neon cost ~1 s each).
     from psycopg_pool import ConnectionPool
     from psycopg.rows import dict_row
-    POOL = ConnectionPool(PG, min_size=1, max_size=8, kwargs={'row_factory': dict_row}, check=ConnectionPool.check_connection, max_idle=300, open=True)
+    POOL = ConnectionPool(PG, min_size=1, max_size=8, kwargs={'row_factory': dict_row, 'autocommit': True}, max_idle=240, open=True)
+    # autocommit + no per-checkout health check: one network round trip per query. Dead connections are retried below.
 CACHE = {}; CACHE_LOCK = threading.Lock(); CACHE_TTL = 60
 def cached(key, fn, ttl=CACHE_TTL):
     now = time.time(); v = CACHE.get(key)
@@ -62,7 +63,12 @@ class Conn:
         if PG: sql = sql.replace('?', '%s').replace(' like ', ' ilike ').replace('insert or ignore', 'insert')
         return sql
     def execute(self, sql, args=()):
-        cur = self.c.cursor(); cur.execute(self.q(sql), args); return cur
+        try:
+            cur = self.c.cursor(); cur.execute(self.q(sql), args); return cur
+        except Exception as e:
+            if not getattr(self, 'pooled', False) or not self.c.closed: raise
+            POOL.putconn(self.c); self.c = POOL.getconn()  # stale pooled connection: retry once on a fresh one
+            cur = self.c.cursor(); cur.execute(self.q(sql), args); return cur
     def executemany(self, sql, rows):
         cur = self.c.cursor(); cur.executemany(self.q(sql), rows); return cur
     def commit(self): self.c.commit()
