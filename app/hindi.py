@@ -10,13 +10,24 @@ DICT = {'college':'कॉलेज','collage':'कॉलेज','colleg':'कॉ
  'memorial':'मेमोरियल','model':'मॉडल','central':'सेंट्रल','city':'सिटी','academic':'एकेडमिक','polytechnic':'पॉलिटेक्निक','iti':'आईटीआई',
  'nursing':'नर्सिंग','pharmacy':'फार्मेसी','medical':'मेडिकल','science':'साइंस','arts':'आर्ट्स','commerce':'कॉमर्स','education':'एजुकेशन',
  'world':'वर्ल्ड','star':'स्टार','new':'न्यू','st':'सेंट','saint':'सेंट','mission':'मिशन','english':'इंग्लिश','medium':'मीडियम','campus':'कैंपस',
- 'noida':'नोएडा','ghaziabad':'गाज़ियाबाद','greater':'ग्रेटर','delhi':'दिल्ली','road':'रोड','sector':'सेक्टर','group':'ग्रुप','institutions':'इंस्टीट्यूशंस'}
+ 'noida':'नोएडा','ghaziabad':'गाज़ियाबाद','greater':'ग्रेटर','delhi':'दिल्ली','road':'रोड','sector':'सेक्टर','group':'ग्रुप','institutions':'इंस्टीट्यूशंस','ram':'राम','om':'ओम','shri':'श्री','sri':'श्री','shree':'श्री','jai':'जय','dev':'देव','sai':'साईं','eng':'इंजीनियरिंग','engg':'इंजीनियरिंग'}
 _DIR = os.path.dirname(os.path.abspath(__file__)); _WF = os.path.join(_DIR, 'hi_words.json')
+_NF = os.path.join(_DIR, 'hi_normal.json'); NORMAL = set(json.load(open(_NF))) if os.path.exists(_NF) else set()
 WORDS = json.load(open(_WF, encoding='utf-8')) if os.path.exists(_WF) else {}
 def is_acronym(tok):
     if len(tok) == 1: return True
     if len(tok) <= 4 and not re.search('[aeiouAEIOU]', tok): return True
-    return len(tok) <= 4 and tok.isupper() and tok.lower() not in DICT
+    # ALL-CAPS token up to 5 letters: spell letters (DPS, IIMT, GNIOT, HRIT) unless it reads like a word (ARYA, AMITY, WAIR)
+    if not (len(tok) <= 5 and tok.isupper()) or tok.lower() in DICT: return False
+    w = tok.lower()
+    if len(w) <= 3: return True
+    return not pronounceable(w)
+CL = set('bl br ch cl cr dr fl fr gl gr kh ph pl pr sh sk sl sm sn sp st sw th tr bh dh gh jh'.split())
+def pronounceable(w):
+    if w.startswith(('ii', 'uu')): return False
+    m = re.match('[^aeiou]+', w)
+    if m and len(m.group()) == 2 and m.group() not in CL: return False
+    return bool(re.fullmatch(r'([^aeiou]{0,2}[aeiouy]{1,2})+[^aeiou]{0,2}', w))
 def online(words, timeout=8):
     # Google Input Tools transliteration (free, no key). Returns {} on any failure.
     out = {}
