@@ -5,13 +5,32 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DB = os.environ.get('DB', os.path.join(os.path.dirname(__file__), 'voters.db'))
 USER = 'kuldeep-malik@mlc.com'
 PW_HASH = generate_password_hash('kuldeep123')
+SEARCH_COLS = ['name','relative_name','relation','address','gender','dob','institution','serial','pincode','state']
 FIELDS = ['serial','name','relative_name','relation','address','gender','dob','institution','c9','c10','state','pincode','page']
 app = Flask(__name__, static_folder=None)
+try:
+    from flask_compress import Compress; Compress(app)
+except ImportError: pass
 app.config['MAX_CONTENT_LENGTH'] = 400*1024*1024
 SESSIONS = {}  # token -> expiry
 JOBS = {}
 
 PG = os.environ.get('DATABASE_URL')
+POOL = None
+if PG and not os.environ.get('NEON_HTTP'):
+    # Reuse connections across requests (new TLS connections to Neon cost ~1 s each).
+    from psycopg_pool import ConnectionPool
+    from psycopg.rows import dict_row
+    POOL = ConnectionPool(PG, min_size=1, max_size=8, kwargs={'row_factory': dict_row}, check=ConnectionPool.check_connection, max_idle=300, open=True)
+CACHE = {}; CACHE_LOCK = threading.Lock(); CACHE_TTL = 60
+def cached(key, fn, ttl=CACHE_TTL):
+    now = time.time(); v = CACHE.get(key)
+    if v and v[0] > now: return v[1]
+    val = fn()
+    with CACHE_LOCK: CACHE[key] = (now + ttl, val)
+    return val
+def invalidate():
+    with CACHE_LOCK: CACHE.clear()
 class NeonHTTP:
     # Neon's HTTPS SQL endpoint (for networks where port 5432 is blocked). Autocommit per statement.
     def __init__(self, url):
@@ -36,9 +55,7 @@ class Conn:
         if PG and os.environ.get('NEON_HTTP'):
             self.c = NeonHTTP(PG)
         elif PG:
-            import psycopg
-            from psycopg.rows import dict_row
-            self.c = psycopg.connect(PG, row_factory=dict_row)
+            self.pooled = True; self.c = POOL.getconn()
         else:
             self.c = sqlite3.connect(DB); self.c.row_factory = lambda cur, row: {d[0]: row[i] for i, d in enumerate(cur.description)}
     def q(self, sql):
@@ -50,7 +67,9 @@ class Conn:
         cur = self.c.cursor(); cur.executemany(self.q(sql), rows); return cur
     def commit(self): self.c.commit()
     def rollback(self): self.c.rollback()
-    def close(self): self.c.close()
+    def close(self):
+        if getattr(self, 'pooled', False): POOL.putconn(self.c)
+        else: self.c.close()
 def connect(): return Conn()
 def db():
     if 'db' not in g: g.db = connect()
@@ -67,6 +86,14 @@ def init():
       address text, gender text, dob text, institution text, c9 text, c10 text, state text, pincode text, page integer);
     create index if not exists vc on voter(cid); create index if not exists vi on voter(cid, institution)'''.split(';'):
         c.execute(stmt)
+    if PG:
+        try:
+            c.execute('create extension if not exists pg_trgm'); c.commit()
+            for col in SEARCH_COLS:
+                c.execute(f'create index if not exists vt_{col} on voter using gin ({col} gin_trgm_ops)')
+            c.commit()
+        except Exception as e:
+            c.rollback(); print('trigram indexes skipped:', e, file=sys.stderr)
     for n in ['Gautam Buddha Nagar', 'Ghaziabad']:
         c.execute('insert or ignore into constituency(name) values(?)' + (' on conflict do nothing' if PG else ''), (n,))
     c.commit(); c.close()
@@ -108,7 +135,7 @@ def me(): return jsonify(user=USER if role() == 'admin' else 'guest', role=role(
 
 @app.get('/api/constituencies')
 def consts():
-    rows = db().execute('select c.id, c.name, count(v.id) n from constituency c left join voter v on v.cid=c.id group by c.id, c.name order by c.id').fetchall()
+    rows = cached('consts', lambda: db().execute('select c.id, c.name, count(v.id) n from constituency c left join voter v on v.cid=c.id group by c.id, c.name order by c.id').fetchall())
     return jsonify(rows)
 @app.post('/api/constituencies')
 def add_const():
@@ -116,7 +143,7 @@ def add_const():
     if not name: return jsonify(error='Name required'), 400
     if db().execute('select 1 from constituency where lower(name)=lower(?)', (name,)).fetchone():
         return jsonify(error='This district already exists'), 400
-    db().execute('insert into constituency(name) values(?)', (name,)); db().commit()
+    db().execute('insert into constituency(name) values(?)', (name,)); db().commit(); invalidate()
     cid = db().execute('select id from constituency where name=?', (name,)).fetchone()['id']
     return jsonify(ok=True, id=cid)
 
@@ -125,12 +152,12 @@ def del_const(cid):
     if not db().execute('select 1 from constituency where id=?', (cid,)).fetchone():
         return jsonify(error='Not found'), 404
     db().execute('delete from voter where cid=?', (cid,))
-    db().execute('delete from constituency where id=?', (cid,)); db().commit()
+    db().execute('delete from constituency where id=?', (cid,)); db().commit(); invalidate()
     return jsonify(ok=True)
 
 @app.get('/api/constituencies/<int:cid>/institutions')
 def insts(cid):
-    rows = db().execute("select institution, count(*) n from voter where cid=? and institution<>'' group by institution order by institution", (cid,)).fetchall()
+    rows = cached(('insts', cid), lambda: db().execute("select institution, count(*) n from voter where cid=? and institution<>'' group by institution order by institution", (cid,)).fetchall())
     return jsonify(rows)
 
 @app.get('/api/constituencies/<int:cid>/voters')
@@ -140,11 +167,13 @@ def voters(cid):
     where = ['cid=?']; args = [cid]
     if inst: where.append('institution=?'); args.append(inst)
     for term in q.split():
-        cols = ['name','relative_name','relation','address','gender','dob','institution','serial','pincode','state']
-        where.append('(' + ' or '.join(f'lower({c}) like lower(?)' for c in cols) + ')'); args += [f'%{term}%']*len(cols)
+        # PG: "col ilike ?" (same matches as lower()/lower()) so the pg_trgm indexes can be used.
+        where.append('(' + ' or '.join(f'{c} like ?' if PG else f'lower({c}) like lower(?)' for c in SEARCH_COLS) + ')'); args += [f'%{term}%']*len(SEARCH_COLS)
     w = ' and '.join(where)
-    total = db().execute(f'select count(*) n from voter where {w}', args).fetchone()['n']
-    rows = db().execute(f"select * from voter where {w} order by (case when coalesce(institution, '') = '' then 1 else 0 end), institution, cast(serial as integer), page, id limit ? offset ?", args+[size,(page-1)*size]).fetchall()
+    rows = db().execute(f"select *, count(*) over() as _total from voter where {w} order by (case when coalesce(institution, '') = '' then 1 else 0 end), institution, cast(serial as integer), page, id limit ? offset ?", args+[size,(page-1)*size]).fetchall()
+    if rows: total = int(rows[0]['_total'])
+    else: total = db().execute(f'select count(*) n from voter where {w}', args).fetchone()['n'] if page > 1 else 0
+    for r in rows: r.pop('_total', None)
     return jsonify(total=total, page=page, size=size, rows=rows)
 
 def insert(cid, recs, conn=None):
@@ -166,10 +195,10 @@ def run_job(jid, cid, path):
         for p in range(1, n+1):
             recs = parse_pdf(path, p, p)
             insert(cid, recs)
-            JOBS[jid]['done'] = p; JOBS[jid]['added'] += len(recs)
-        JOBS[jid]['status'] = 'finished'
+            JOBS[jid]['done'] = p; JOBS[jid]['added'] += len(recs); invalidate()
+        JOBS[jid]['status'] = 'finished'; invalidate()
     except Exception as e:
-        JOBS[jid].update(status='error', error=str(e))
+        JOBS[jid].update(status='error', error=str(e)); invalidate()
     finally:
         os.remove(path)
 
@@ -179,7 +208,7 @@ def upload(cid):
     if not f or not f.filename.lower().endswith('.pdf'): return jsonify(error='Please upload a PDF'), 400
     fd, path = tempfile.mkstemp(suffix='.pdf'); os.close(fd); f.save(path)
     if request.form.get('replace') == '1':
-        db().execute('delete from voter where cid=?', (cid,)); db().commit()
+        db().execute('delete from voter where cid=?', (cid,)); db().commit(); invalidate()
     jid = secrets.token_hex(6); JOBS[jid] = dict(status='running', done=0, pages=0, added=0)
     threading.Thread(target=run_job, args=(jid, cid, path), daemon=True).start()
     return jsonify(job=jid)

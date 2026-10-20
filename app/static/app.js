@@ -17,7 +17,7 @@ async function loadConsts(keep){const s=$('#const');const first=!s.dataset.loade
  $('#const-spin').classList.add('hidden');s.dataset.loaded=1;s.disabled=false;
  s.innerHTML=(cs.length?'<option value="">Please choose District (ज़िला)</option>':'<option value="">No districts yet (कोई ज़िला नहीं)</option>')+cs.map(c=>`<option value="${c.id}">${esc(c.name)} (${c.n})</option>`).join('');s.value=keep||cid}
 $('#const-retry').onclick=()=>loadConsts();
-$('#const').onchange=async e=>{cid=e.target.value;inst='';page=1;$('#q').value='';$('#del-const').disabled=!cid;$('#list-area').classList.toggle('hidden',!cid);
+$('#const').onchange=async e=>{PC.clear();cid=e.target.value;inst='';page=1;$('#q').value='';$('#del-const').disabled=!cid;$('#list-area').classList.toggle('hidden',!cid);
  if(!cid)return;insts=await (await api(`/api/constituencies/${cid}/institutions`)).json();setInst('');};
 let newCid='';
 $('#add-const').onclick=()=>{newCid='';$('#add-name').value='';$('#add-err').textContent='';$('#add-status').textContent='';$('#add-file').value='';
@@ -49,8 +49,15 @@ $('#inst-q').oninput=renderInsts;$('#inst-list').onclick=e=>{if(e.target.dataset
 document.addEventListener('click',e=>{if(!e.target.closest('.combo'))$('#inst-pop').classList.add('hidden')});
 let t;$('#q').oninput=()=>{clearTimeout(t);t=setTimeout(()=>{page=1;load()},300)};
 $('#prev').onclick=()=>{if(page>1){page--;load()}};$('#next').onclick=()=>{if(page*SIZE<total){page++;load()}};
-let seq=0;async function load(){const my=++seq;const p=new URLSearchParams({q:$('#q').value,page,size:SIZE});if(inst)p.set('institution',inst);
- const d=await (await api(`/api/constituencies/${cid}/voters?${p}`)).json();if(my!==seq)return;total=d.total;const empty=!total&&!inst&&!$('#q').value.trim();$('#empty').classList.toggle('hidden',!empty);const kw=$('#q').value.trim();const nores=!total&&!empty;
+// Page cache + background prefetch so Next/Prev are instant. Cleared whenever the district changes (incl. after upload/delete).
+let PC=new Map();const pkey=(pg,q)=>`${cid}|${inst}|${q}|${pg}`;
+function getPage(pg,q,bg){const k=pkey(pg,q);if(PC.has(k))return PC.get(k);const p=new URLSearchParams({q,page:pg,size:SIZE});if(inst)p.set('institution',inst);
+ const u=`/api/constituencies/${cid}/voters?${p}`;
+ const pr=(bg?fetch(u,{credentials:'same-origin'}).then(r=>{if(!r.ok)throw 0;return r.json()}):api(u).then(r=>{if(!r.ok)throw 0;return r.json()}));
+ PC.set(k,pr);pr.catch(()=>PC.delete(k));if(PC.size>200)PC.delete(PC.keys().next().value);return pr}
+let seq=0;async function load(){const my=++seq;const q=$('#q').value;
+ const d=await getPage(page,q);if(my!==seq)return;
+ if(page*SIZE<d.total)getPage(page+1,q,1).catch(()=>{});if(page>1)getPage(page-1,q,1).catch(()=>{});total=d.total;const empty=!total&&!inst&&!$('#q').value.trim();$('#empty').classList.toggle('hidden',!empty);const kw=$('#q').value.trim();const nores=!total&&!empty;
  $('#noresult').textContent=nores?('No entries found'+(kw?` for "${kw}"`:'')+(inst?(kw?' in':' for')+` "${inst}"`:'')):'';
  $('#noresult').classList.toggle('hidden',!nores);
  document.querySelector('.table-wrap').classList.toggle('hidden',empty||nores);document.querySelector('.pager').classList.toggle('hidden',empty||nores);

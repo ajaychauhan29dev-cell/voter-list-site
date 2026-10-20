@@ -4,4 +4,5 @@ opencv-python-headless
 numpy
 pillow
 tesserocr
-psycopg[binary]
+psycopg[binary,pool]
+flask-compress
